@@ -10,6 +10,7 @@ export default function PersonalMantenimientoList() {
     notification,
     getPersonalMantenimiento,
     crearPersonalMantenimiento,
+    actualizarPersonalMantenimientoCompleto, // CAMBIAR: Usar la función completa
     clearError,
     clearNotification,
   } = useContext(PersonalContext);
@@ -17,6 +18,7 @@ export default function PersonalMantenimientoList() {
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [viewing, setViewing] = useState(null);
+  const [mode, setMode] = useState("create");
 
   useEffect(() => {
     getPersonalMantenimiento();
@@ -45,11 +47,13 @@ export default function PersonalMantenimientoList() {
 
   const abrirNuevo = () => {
     setViewing(null);
+    setMode("create");
     setFormOpen(true);
   };
 
   const abrirDetalle = (persona) => {
     setViewing(persona);
+    setMode("view");
     setFormOpen(true);
   };
 
@@ -60,6 +64,18 @@ export default function PersonalMantenimientoList() {
       setViewing(null);
     } catch (err) {
       console.error("Error al guardar:", err);
+    }
+  };
+
+  // CORREGIDO: Usar la función COMPLETA que actualiza tanto persona como personal
+  const handleUpdateForm = async (id, payload) => {
+    try {
+      await actualizarPersonalMantenimientoCompleto(id, payload); // CAMBIAR AQUÍ
+      setFormOpen(false);
+      setViewing(null);
+      setMode("create");
+    } catch (err) {
+      console.error("Error al actualizar:", err);
     }
   };
 
@@ -75,35 +91,21 @@ export default function PersonalMantenimientoList() {
       </header>
 
       {notification && (
-        <div
-          className={`mb-4 p-4 rounded-2xl border ${
-            notification.type === "success"
-              ? "bg-green-50 border-green-200"
-              : "bg-blue-50 border-blue-200"
-          }`}
-        >
+        <div className={`mb-4 p-4 rounded-2xl border ${
+          notification.type === 'success' 
+            ? 'bg-green-50 border-green-200' 
+            : 'bg-blue-50 border-blue-200'
+        }`}>
           <div className="flex items-center gap-2">
-            <span
-              className={`text-lg ${
-                notification.type === "success"
-                  ? "text-green-600"
-                  : "text-blue-600"
-              }`}
-            >
-              {notification.type === "success" ? "✓" : "i"}
+            <span className={`text-lg ${notification.type === 'success' ? 'text-green-600' : 'text-blue-600'}`}>
+              {notification.type === 'success' ? '✓' : 'i'}
             </span>
             <div className="flex-1">
-              <p
-                className={`font-semibold ${
-                  notification.type === "success"
-                    ? "text-green-800"
-                    : "text-blue-800"
-                }`}
-              >
+              <p className={`font-semibold ${notification.type === 'success' ? 'text-green-800' : 'text-blue-800'}`}>
                 {notification.message}
               </p>
             </div>
-            <button
+            <button 
               onClick={clearNotification}
               className="text-slate-400 hover:text-slate-600"
             >
@@ -168,12 +170,7 @@ export default function PersonalMantenimientoList() {
         ) : error ? (
           <div className="px-4 md:px-6 py-6 text-sm text-red-600 text-center">
             {error}
-            <button
-              onClick={clearError}
-              className="ml-2 text-red-400 hover:text-red-300"
-            >
-              ✕
-            </button>
+            <button onClick={clearError} className="ml-2 text-red-400 hover:text-red-300">✕</button>
           </div>
         ) : filtrados.length === 0 ? (
           <div className="px-4 md:px-6 py-8 text-sm text-slate-500 text-center">
@@ -182,36 +179,21 @@ export default function PersonalMantenimientoList() {
         ) : (
           <ul className="divide-y divide-slate-100">
             {filtrados.map((p) => (
-              <li
-                key={p.personalMantenimientoID}
-                className="px-4 md:px-6 py-4 text-xs md:text-sm hover:bg-emerald-50/70 transition-colors"
-              >
+              <li key={p.personalMantenimientoID} className="px-4 md:px-6 py-4 text-xs md:text-sm hover:bg-emerald-50/70 transition-colors">
                 <div className="flex items-center gap-4">
                   <div className="w-1/6 text-center">
-                    <div className="font-medium text-slate-800">
-                      {p.nombrePersona}
-                    </div>
+                    <div className="font-medium text-slate-800">{p.nombrePersona}</div>
                   </div>
-                  <div className="w-1/6 text-center text-slate-700">
-                    {p.puesto}
-                  </div>
-                  <div className="w-1/6 text-center text-slate-700">
-                    {p.turno}
-                  </div>
-                  <div className="w-1/6 text-center text-slate-700">
-                    {p.diasLaborales}
-                  </div>
-                  <div className="w-1/6 text-center text-slate-700">
-                    {p.telefonoPersona}
-                  </div>
+                  <div className="w-1/6 text-center text-slate-700">{p.puesto}</div>
+                  <div className="w-1/6 text-center text-slate-700">{p.turno}</div>
+                  <div className="w-1/6 text-center text-slate-700">{p.diasLaborales}</div>
+                  <div className="w-1/6 text-center text-slate-700">{p.telefonoPersona}</div>
                   <div className="w-1/12 flex justify-center">
-                    <span
-                      className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold ${
-                        p.activo
-                          ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
-                          : "bg-slate-200 text-slate-700 border border-slate-300"
-                      }`}
-                    >
+                    <span className={`inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold ${
+                      p.activo 
+                        ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                        : "bg-slate-200 text-slate-700 border border-slate-300"
+                    }`}>
                       {p.activo ? "Activo" : "Inactivo"}
                     </span>
                   </div>
@@ -235,10 +217,13 @@ export default function PersonalMantenimientoList() {
         onClose={() => {
           setFormOpen(false);
           setViewing(null);
+          setMode("create");
         }}
         onSubmit={handleSubmitForm}
+        onUpdate={handleUpdateForm}
         initial={viewing}
-        mode={viewing ? "view" : "create"}
+        mode={mode}
+        onModificar={() => setMode("edit")}
       />
     </div>
   );

@@ -3,6 +3,7 @@ import {
   GET_PERSONAL_MANTENIMIENTO,
   GET_PERSONAL_MANTENIMIENTO_BY_ID,
   CREAR_PERSONAL_MANTENIMIENTO,
+  ACTUALIZAR_PERSONAL_MANTENIMIENTO,
   SET_LOADING,
   SET_ERROR,
   CLEAR_ERROR,
@@ -34,6 +35,17 @@ export const PersonalReducer = (state, action) => {
       return {
         ...state,
         personalMantenimiento: [payload, ...state.personalMantenimiento],
+        loading: false,
+        error: null,
+      };
+
+    case ACTUALIZAR_PERSONAL_MANTENIMIENTO:
+      return {
+        ...state,
+        personalMantenimiento: state.personalMantenimiento.map(item =>
+          item.personalMantenimientoID === payload.personalMantenimientoID ? payload : item
+        ),
+        personalDetalle: payload,
         loading: false,
         error: null,
       };

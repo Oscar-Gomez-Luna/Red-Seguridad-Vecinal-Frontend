@@ -1,7 +1,7 @@
 // src/pages/reportes/ReporteDetail.jsx
-import { useEffect, useMemo, useContext } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import ReportesContext from "../../context/Reportes/ReportesContext";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams, Link } from "react-router-dom";
+import ReportesAPI from "../../services/reportes.api";
 
 // Paleta base usada
 const COLORS = {
@@ -68,20 +68,25 @@ export default function ReporteDetail() {
   const { id } = useParams();
   const nav = useNavigate();
 
-  const {
-    reporteActual: item,
-    loading,
-    error,
-    fetchReporteById,
-    marcarVisto,
-    cambiarAnonimato,
-  } = useContext(ReportesContext);
+  const [loading, setLoading] = useState(true);
+  const [item, setItem] = useState(null);
+  const [error, setError] = useState("");
 
-  // Cargar detalle desde el contexto
-  useEffect(() => {
-    if (id) {
-      fetchReporteById(Number(id));
+  const load = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const r = await ReportesAPI.getById(id);
+      setItem(r);
+    } catch (e) {
+      setError(e.message || "No se pudo cargar el reporte");
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -91,27 +96,24 @@ export default function ReporteDetail() {
   }, [item]);
 
   const onVisto = async () => {
-    if (!item) return;
     try {
-      await marcarVisto(item.reporteID, !item.visto);
-      // El contexto se encarga de actualizar el estado
+      await ReportesAPI.marcarVisto(item.reporteID, !item.visto);
+      setItem((x) => ({ ...x, visto: !x.visto }));
     } catch (e) {
       alert(e.message || "No se pudo actualizar el estado");
     }
   };
 
   const onAnon = async () => {
-    if (!item) return;
     try {
-      await cambiarAnonimato(item.reporteID, !item.esAnonimo);
-      // El contexto se encarga de actualizar el estado
+      await ReportesAPI.setAnonimato(item.reporteID, !item.esAnonimo);
+      setItem((x) => ({ ...x, esAnonimo: !x.esAnonimo }));
     } catch (e) {
       alert(e.message || "No se pudo cambiar el anonimato");
     }
   };
 
   const copyCoords = async () => {
-    if (!item) return;
     try {
       await navigator.clipboard.writeText(`${item.latitud}, ${item.longitud}`);
       alert("Coordenadas copiadas");
@@ -152,7 +154,7 @@ export default function ReporteDetail() {
             Volver
           </button>
           <button
-            onClick={() => fetchReporteById(Number(id))}
+            onClick={load}
             className="px-3 py-2 text-sm rounded-lg border border-[#10B981] bg-[#10B981] text-white
                        active:scale-95 transition focus:outline-none focus:ring-2 focus:ring-emerald-300"
             title="Recargar"

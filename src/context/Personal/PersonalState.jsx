@@ -1,10 +1,10 @@
-// context/Servicios/ServiciosState.jsx
 import React, { useReducer } from "react";
 import PersonalContext from "./PersonalContext";
 import {
   GET_PERSONAL_MANTENIMIENTO,
   GET_PERSONAL_MANTENIMIENTO_BY_ID,
   CREAR_PERSONAL_MANTENIMIENTO,
+  ACTUALIZAR_PERSONAL_MANTENIMIENTO,
   SET_LOADING,
   SET_ERROR,
   CLEAR_ERROR,
@@ -30,14 +30,15 @@ const ServiciosState = (props) => {
   const setLoading = (value) => dispatch({ type: SET_LOADING, payload: value });
   const setError = (error) => dispatch({ type: SET_ERROR, payload: error });
   const clearError = () => dispatch({ type: CLEAR_ERROR });
-  const setNotification = (notification) => dispatch({ type: SET_NOTIFICATION, payload: notification });
+  const setNotification = (notification) =>
+    dispatch({ type: SET_NOTIFICATION, payload: notification });
   const clearNotification = () => dispatch({ type: CLEAR_NOTIFICATION });
 
   const getPersonalMantenimiento = async () => {
     try {
       setLoading(true);
       const res = await axios.get(`${API}/Servicios/personal-mantenimiento`);
-      
+
       dispatch({
         type: GET_PERSONAL_MANTENIMIENTO,
         payload: res.data,
@@ -54,8 +55,10 @@ const ServiciosState = (props) => {
   const getPersonalMantenimientoById = async (id) => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API}/Servicios/personal-mantenimiento/${id}`);
-      
+      const res = await axios.get(
+        `${API}/Servicios/personal-mantenimiento/${id}`
+      );
+
       dispatch({
         type: GET_PERSONAL_MANTENIMIENTO_BY_ID,
         payload: res.data,
@@ -72,8 +75,11 @@ const ServiciosState = (props) => {
   const crearPersonalMantenimiento = async (personalData) => {
     try {
       setLoading(true);
-      const res = await axios.post(`${API}/Servicios/personal-mantenimiento`, personalData);
-      
+      const res = await axios.post(
+        `${API}/Servicios/personal-mantenimiento`,
+        personalData
+      );
+
       dispatch({
         type: CREAR_PERSONAL_MANTENIMIENTO,
         payload: res.data,
@@ -94,6 +100,66 @@ const ServiciosState = (props) => {
     }
   };
 
+  const actualizarPersonalMantenimiento = async (id, personalData) => {
+    try {
+      setLoading(true);
+      const res = await axios.patch(
+        `${API}/Servicios/personal-mantenimiento/${id}`,
+        personalData
+      );
+
+      dispatch({
+        type: ACTUALIZAR_PERSONAL_MANTENIMIENTO,
+        payload: res.data,
+      });
+
+      await getPersonalMantenimiento();
+
+      setNotification({
+        type: "success",
+        message: "Personal de mantenimiento actualizado exitosamente",
+      });
+
+      return res.data;
+    } catch (error) {
+      console.error("Error al actualizar personal de mantenimiento:", error);
+      setError("No se pudo actualizar el personal de mantenimiento.");
+      return null;
+    }
+  };
+
+  const actualizarPersonalMantenimientoCompleto = async (id, personalData) => {
+    try {
+      setLoading(true);
+
+      console.log("Enviando datos de actualización completa:", personalData);
+
+      const res = await axios.put(
+        `${API}/Servicios/personal-mantenimiento/${id}/completo`,
+        personalData
+      );
+
+      console.log("Respuesta del servidor (completo):", res.data);
+
+      // Recargar la lista para ver los cambios
+      await getPersonalMantenimiento();
+
+      setNotification({
+        type: "success",
+        message: "Personal de mantenimiento actualizado exitosamente",
+      });
+
+      return res.data;
+    } catch (error) {
+      console.error(
+        "Error al actualizar personal de mantenimiento completo:",
+        error
+      );
+      setError("No se pudo actualizar el personal de mantenimiento.");
+      return null;
+    }
+  };
+
   return (
     <PersonalContext.Provider
       value={{
@@ -106,6 +172,8 @@ const ServiciosState = (props) => {
         getPersonalMantenimiento,
         getPersonalMantenimientoById,
         crearPersonalMantenimiento,
+        actualizarPersonalMantenimiento,
+        actualizarPersonalMantenimientoCompleto,
         setError,
         clearError,
         setNotification,

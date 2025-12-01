@@ -4,11 +4,18 @@ export default function PersonalMantenimientoForm({
   open,
   onClose,
   onSubmit,
+  onUpdate,
   initial,
   mode = "create",
+  onModificar
 }) {
   const [form, setForm] = useState({
-    personaID: "",
+    nombre: "",
+    apellidoPaterno: "",
+    apellidoMaterno: "",
+    telefono: "",
+    email: "",
+    fechaNacimiento: "",
     puesto: "",
     fechaContratacion: "",
     sueldo: "",
@@ -18,23 +25,39 @@ export default function PersonalMantenimientoForm({
     notas: "",
   });
 
+  const [currentMode, setCurrentMode] = useState(mode);
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false); // Agregar esta línea
+
+  useEffect(() => {
+    setCurrentMode(mode);
+  }, [mode]);
 
   useEffect(() => {
     if (initial) {
       setForm({
-        personaID: initial.personaID ?? "",
-        puesto: initial.puesto ?? "",
-        fechaContratacion: initial.fechaContratacion?.slice(0, 10) ?? "",
+        nombre: initial.nombre || "",
+        apellidoPaterno: initial.apellidoPaterno || "",
+        apellidoMaterno: initial.apellidoMaterno || "",
+        telefono: initial.telefono || "",
+        email: initial.email || "",
+        fechaNacimiento: initial.fechaNacimiento || "",
+        puesto: initial.puesto || "",
+        fechaContratacion: initial.fechaContratacion || "",
         sueldo: initial.sueldo ?? "",
-        tipoContrato: initial.tipoContrato ?? "",
-        turno: initial.turno ?? "",
-        diasLaborales: initial.diasLaborales ?? "",
-        notas: initial.notas ?? "",
+        tipoContrato: initial.tipoContrato || "",
+        turno: initial.turno || "",
+        diasLaborales: initial.diasLaborales || "",
+        notas: initial.notas || "",
       });
     } else {
       setForm({
-        personaID: "",
+        nombre: "",
+        apellidoPaterno: "",
+        apellidoMaterno: "",
+        telefono: "",
+        email: "",
+        fechaNacimiento: "",
         puesto: "",
         fechaContratacion: "",
         sueldo: "",
@@ -44,106 +67,366 @@ export default function PersonalMantenimientoForm({
         notas: "",
       });
     }
+    setErrors({});
+    setIsSubmitting(false);
   }, [initial, open]);
 
   if (!open) return null;
 
-  const handleChange = (evt) => {
-    if (mode === "view") return;
-    const { name, value } = evt.target;
-    setForm((f) => ({ ...f, [name]: value }));
-  };
-
   const validate = () => {
     const e = {};
 
-    if (!String(form.personaID).trim()) e.personaID = "Persona requerida";
+    if (currentMode === "create") {
+      if (!form.nombre.trim()) e.nombre = "Nombre requerido";
+      if (!form.apellidoPaterno.trim()) e.apellidoPaterno = "Apellido paterno requerido";
+      if (!form.telefono.trim()) e.telefono = "Teléfono requerido";
+    }
+
     if (!form.puesto.trim()) e.puesto = "Puesto requerido";
-    if (!form.fechaContratacion) e.fechaContratacion = "Fecha requerida";
-    if (form.sueldo === "" || Number(form.sueldo) <= 0)
-      e.sueldo = "Sueldo debe ser mayor a 0";
-    if (!form.tipoContrato.trim())
-      e.tipoContrato = "Tipo de contrato requerido";
+    if (!form.fechaContratacion) e.fechaContratacion = "Fecha de contratación requerida";
+    if (form.sueldo === "" || Number(form.sueldo) <= 0) e.sueldo = "Sueldo debe ser mayor a 0";
+    if (!form.tipoContrato.trim()) e.tipoContrato = "Tipo de contrato requerido";
     if (!form.turno.trim()) e.turno = "Turno requerido";
-    if (!form.diasLaborales.trim())
-      e.diasLaborales = "Días laborales requeridos";
+    if (!form.diasLaborales.trim()) e.diasLaborales = "Días laborales requeridos";
 
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = (evt) => {
+  const handleChange = (evt) => {
+    if (currentMode === "view") return;
+    const { name, value } = evt.target;
+    setForm((f) => ({ ...f, [name]: value }));
+  };
+
+  const handleSubmit = async (evt) => {
     evt.preventDefault();
-    if (mode === "view") {
+    if (currentMode === "view") {
       onClose();
       return;
     }
-
+    
     if (!validate()) return;
 
-    onSubmit({
-      personaID: Number(form.personaID),
-      puesto: form.puesto.trim(),
-      fechaContratacion: form.fechaContratacion,
-      sueldo: Number(form.sueldo),
-      tipoContrato: form.tipoContrato.trim(),
-      turno: form.turno.trim(),
-      diasLaborales: form.diasLaborales.trim(),
-      notas: form.notas.trim(),
-    });
+    setIsSubmitting(true);
+
+    try {
+      if (currentMode === "create") {
+        // Para crear, enviamos todos los datos
+        const payload = {
+          nombre: form.nombre.trim(),
+          apellidoPaterno: form.apellidoPaterno.trim(),
+          apellidoMaterno: form.apellidoMaterno.trim() || null,
+          telefono: form.telefono.trim(),
+          email: form.email.trim() || null,
+          fechaNacimiento: form.fechaNacimiento || null,
+          puesto: form.puesto.trim(),
+          fechaContratacion: form.fechaContratacion,
+          sueldo: Number(form.sueldo),
+          tipoContrato: form.tipoContrato.trim(),
+          turno: form.turno.trim(),
+          diasLaborales: form.diasLaborales.trim(),
+          notas: form.notas.trim() || null,
+        };
+        await onSubmit(payload);
+      } else if (currentMode === "edit" && initial) {
+        // Para editar, ahora enviamos todos los datos usando la nueva API
+        const payload = {
+          nombre: form.nombre.trim(),
+          apellidoPaterno: form.apellidoPaterno.trim(),
+          apellidoMaterno: form.apellidoMaterno.trim() || null,
+          telefono: form.telefono.trim(),
+          email: form.email.trim() || null,
+          fechaNacimiento: form.fechaNacimiento || null,
+          puesto: form.puesto.trim(),
+          fechaContratacion: form.fechaContratacion,
+          sueldo: Number(form.sueldo),
+          tipoContrato: form.tipoContrato.trim(),
+          turno: form.turno.trim(),
+          diasLaborales: form.diasLaborales.trim(),
+          notas: form.notas.trim() || null,
+        };
+        await onUpdate(initial.personalMantenimientoID, payload);
+      }
+      
+      onClose(); // Cambiar setFormOpen por onClose
+    } catch (err) {
+      console.error("Error al guardar:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const isViewMode = mode === "view";
+  const handleModificar = () => {
+    setCurrentMode("edit");
+    if (onModificar) {
+      onModificar();
+    }
+  };
+
+  const isViewMode = currentMode === "view";
+  const isEditMode = currentMode === "edit";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4">
-        <div className="bg-emerald-600 text-white px-6 py-4 rounded-t-2xl flex items-center justify-between">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden">
+        <div className="bg-emerald-600 text-white px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold">
-            {isViewMode
-              ? "Detalles del Personal"
-              : initial
-              ? "Editar Personal"
-              : "Nuevo Personal de Mantenimiento"}
+            {isViewMode ? "Detalles del Personal" : 
+             isEditMode ? "Editar Personal" : 
+             "Nuevo Personal de Mantenimiento"}
           </h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 grid place-items-center rounded-lg hover:bg-white/10 transition-colors"
+            disabled={isSubmitting}
+            className="w-8 h-8 grid place-items-center rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50"
           >
-            <span className="text-2xl">×</span>
+            ×
           </button>
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="px-6 py-4 max-h-[70vh] overflow-y-auto"
-        >
-          {/* Persona ID */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              ID de Persona
-            </label>
-            <input
-              type="number"
-              name="personaID"
-              value={form.personaID}
-              onChange={handleChange}
-              disabled={isViewMode}
-              className={`w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-                isViewMode ? "bg-slate-100 text-slate-600" : ""
-              }`}
-              placeholder="Ingresa el ID de la persona"
-            />
-            {errors.personaID && (
-              <p className="text-xs text-red-500 mt-1">{errors.personaID}</p>
-            )}
-          </div>
+        <form onSubmit={handleSubmit} className="px-6 py-4 max-h-[70vh] overflow-y-auto">
+          {/* Campos de persona - solo en modo crear */}
+          {currentMode === "create" && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Nombre *
+                  </label>
+                  <input
+                    type="text"
+                    name="nombre"
+                    value={form.nombre}
+                    onChange={handleChange}
+                    disabled={isViewMode}
+                    className={`w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                      isViewMode ? "bg-slate-100 text-slate-600" : ""
+                    }`}
+                    placeholder="Ingresa el nombre"
+                  />
+                  {errors.nombre && (
+                    <p className="text-xs text-red-500 mt-1">{errors.nombre}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Apellido Paterno *
+                  </label>
+                  <input
+                    type="text"
+                    name="apellidoPaterno"
+                    value={form.apellidoPaterno}
+                    onChange={handleChange}
+                    disabled={isViewMode}
+                    className={`w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                      isViewMode ? "bg-slate-100 text-slate-600" : ""
+                    }`}
+                    placeholder="Ingresa el apellido paterno"
+                  />
+                  {errors.apellidoPaterno && (
+                    <p className="text-xs text-red-500 mt-1">{errors.apellidoPaterno}</p>
+                  )}
+                </div>
+              </div>
 
-          {/* Puesto y Sueldo */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Apellido Materno
+                  </label>
+                  <input
+                    type="text"
+                    name="apellidoMaterno"
+                    value={form.apellidoMaterno}
+                    onChange={handleChange}
+                    disabled={isViewMode}
+                    className={`w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                      isViewMode ? "bg-slate-100 text-slate-600" : ""
+                    }`}
+                    placeholder="Ingresa el apellido materno"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Teléfono *
+                  </label>
+                  <input
+                    type="text"
+                    name="telefono"
+                    value={form.telefono}
+                    onChange={handleChange}
+                    disabled={isViewMode}
+                    className={`w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                      isViewMode ? "bg-slate-100 text-slate-600" : ""
+                    }`}
+                    placeholder="Ingresa el teléfono"
+                  />
+                  {errors.telefono && (
+                    <p className="text-xs text-red-500 mt-1">{errors.telefono}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    disabled={isViewMode}
+                    className={`w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                      isViewMode ? "bg-slate-100 text-slate-600" : ""
+                    }`}
+                    placeholder="Ingresa el email"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Fecha de Nacimiento
+                  </label>
+                  <input
+                    type="date"
+                    name="fechaNacimiento"
+                    value={form.fechaNacimiento}
+                    onChange={handleChange}
+                    disabled={isViewMode}
+                    className={`w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                      isViewMode ? "bg-slate-100 text-slate-600" : ""
+                    }`}
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Campos de persona - en modo edición también */}
+          {(currentMode === "edit" || currentMode === "view") && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Nombre
+                  </label>
+                  <input
+                    type="text"
+                    name="nombre"
+                    value={form.nombre}
+                    onChange={handleChange}
+                    disabled={isViewMode}
+                    className={`w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                      isViewMode ? "bg-slate-100 text-slate-600" : ""
+                    }`}
+                    placeholder="Ingresa el nombre"
+                  />
+                  {errors.nombre && (
+                    <p className="text-xs text-red-500 mt-1">{errors.nombre}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Apellido Paterno
+                  </label>
+                  <input
+                    type="text"
+                    name="apellidoPaterno"
+                    value={form.apellidoPaterno}
+                    onChange={handleChange}
+                    disabled={isViewMode}
+                    className={`w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                      isViewMode ? "bg-slate-100 text-slate-600" : ""
+                    }`}
+                    placeholder="Ingresa el apellido paterno"
+                  />
+                  {errors.apellidoPaterno && (
+                    <p className="text-xs text-red-500 mt-1">{errors.apellidoPaterno}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Apellido Materno
+                  </label>
+                  <input
+                    type="text"
+                    name="apellidoMaterno"
+                    value={form.apellidoMaterno}
+                    onChange={handleChange}
+                    disabled={isViewMode}
+                    className={`w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                      isViewMode ? "bg-slate-100 text-slate-600" : ""
+                    }`}
+                    placeholder="Ingresa el apellido materno"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Teléfono
+                  </label>
+                  <input
+                    type="text"
+                    name="telefono"
+                    value={form.telefono}
+                    onChange={handleChange}
+                    disabled={isViewMode}
+                    className={`w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                      isViewMode ? "bg-slate-100 text-slate-600" : ""
+                    }`}
+                    placeholder="Ingresa el teléfono"
+                  />
+                  {errors.telefono && (
+                    <p className="text-xs text-red-500 mt-1">{errors.telefono}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    disabled={isViewMode}
+                    className={`w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                      isViewMode ? "bg-slate-100 text-slate-600" : ""
+                    }`}
+                    placeholder="Ingresa el email"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Fecha de Nacimiento
+                  </label>
+                  <input
+                    type="date"
+                    name="fechaNacimiento"
+                    value={form.fechaNacimiento}
+                    onChange={handleChange}
+                    disabled={isViewMode}
+                    className={`w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                      isViewMode ? "bg-slate-100 text-slate-600" : ""
+                    }`}
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Campos del personal - siempre visibles */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                Puesto
+                Puesto *
               </label>
               <input
                 type="text"
@@ -162,7 +445,7 @@ export default function PersonalMantenimientoForm({
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                Sueldo Mensual
+                Sueldo Mensual *
               </label>
               <input
                 type="number"
@@ -181,11 +464,10 @@ export default function PersonalMantenimientoForm({
             </div>
           </div>
 
-          {/* Fecha y Tipo de Contrato */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                Fecha de Contratación
+                Fecha de Contratación *
               </label>
               <input
                 type="date"
@@ -198,15 +480,12 @@ export default function PersonalMantenimientoForm({
                 }`}
               />
               {errors.fechaContratacion && (
-                <p className="text-xs text-red-500 mt-1">
-                  {errors.fechaContratacion}
-                </p>
+                <p className="text-xs text-red-500 mt-1">{errors.fechaContratacion}</p>
               )}
             </div>
-
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                Tipo de Contrato
+                Tipo de Contrato *
               </label>
               <select
                 name="tipoContrato"
@@ -223,18 +502,15 @@ export default function PersonalMantenimientoForm({
                 <option value="Por proyecto">Por proyecto</option>
               </select>
               {errors.tipoContrato && (
-                <p className="text-xs text-red-500 mt-1">
-                  {errors.tipoContrato}
-                </p>
+                <p className="text-xs text-red-500 mt-1">{errors.tipoContrato}</p>
               )}
             </div>
           </div>
 
-          {/* Turno y Días Laborales */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                Turno
+                Turno *
               </label>
               <select
                 name="turno"
@@ -257,7 +533,7 @@ export default function PersonalMantenimientoForm({
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                Días Laborales
+                Días Laborales *
               </label>
               <select
                 name="diasLaborales"
@@ -276,24 +552,21 @@ export default function PersonalMantenimientoForm({
                 <option value="Lunes-Domingo">Lunes a Domingo</option>
               </select>
               {errors.diasLaborales && (
-                <p className="text-xs text-red-500 mt-1">
-                  {errors.diasLaborales}
-                </p>
+                <p className="text-xs text-red-500 mt-1">{errors.diasLaborales}</p>
               )}
             </div>
           </div>
 
-          {/* Notas */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-slate-700 mb-2">
               Notas Adicionales
             </label>
             <textarea
               name="notas"
+              rows={3}
               value={form.notas}
               onChange={handleChange}
               disabled={isViewMode}
-              rows={3}
               className={`w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none ${
                 isViewMode ? "bg-slate-100 text-slate-600" : ""
               }`}
@@ -301,21 +574,31 @@ export default function PersonalMantenimientoForm({
             />
           </div>
 
-          {/* Botones */}
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-full bg-slate-600 text-white text-sm font-semibold hover:bg-slate-700 transition-colors"
+              disabled={isSubmitting}
+              className="px-4 py-2.5 rounded-full bg-slate-600 text-white text-sm font-semibold hover:bg-slate-700 transition-colors disabled:opacity-50"
             >
               {isViewMode ? "Cerrar" : "Cancelar"}
             </button>
             {!isViewMode && (
               <button
                 type="submit"
-                className="px-4 py-2.5 rounded-full bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors"
+                disabled={isSubmitting}
+                className="px-4 py-2.5 rounded-full bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-50"
               >
-                {initial ? "Guardar Cambios" : "Registrar Personal"}
+                {isSubmitting ? "Guardando..." : (isEditMode ? "Guardar Cambios" : "Registrar Personal")}
+              </button>
+            )}
+            {isViewMode && (
+              <button
+                type="button"
+                onClick={handleModificar}
+                className="px-4 py-2.5 rounded-full bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+              >
+                Modificar
               </button>
             )}
           </div>

@@ -1,17 +1,12 @@
 // src/services/http.js
 
-// Base del backend (ej. http://localhost:5165 o http://localhost:5165/api).
+// Base del backend (ej. http://localhost:5165).
 // Usa VITE_API_BASE_URL si existe; si no, por defecto localhost:5165
-let API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5165";
+const API_BASE = (
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5165"
+).replace(/\/$/, "");
 
-// Quita solo el "/" final si existe
-API_BASE = API_BASE.replace(/\/$/, "");
-
-// Prefijo por defecto del backend
-const RAW_PREFIX = "/api";
-
-// Si la base YA termina en "/api", no agregamos otro "/api"
-const API_PREFIX = API_BASE.endsWith("/api") ? "" : RAW_PREFIX;
+const API_PREFIX = "";
 
 // Une dos segmentos de forma segura
 const join = (a, b) => `${a}${b.startsWith("/") ? "" : "/"}${b}`;
@@ -44,9 +39,7 @@ export const auth = {
  * y agregando query params (si se pasan).
  */
 export function buildUrl(path, params) {
-  // Si el path ya viene con "/api", lo dejamos; si no, le anteponemos el prefijo calculado.
   const clean = path.startsWith("/api") ? path : `${API_PREFIX}${path}`;
-
   const url = new URL(join(API_BASE || window.location.origin, clean));
 
   if (params && typeof params === "object") {
@@ -180,7 +173,7 @@ export const http = {
   /** DELETE simple (nombre corto). */
   del: (path, opts) => request("DELETE", path, opts),
 
-  //  Alias estilo Axios para que funcione http.delete(...)
+  // ✅ Alias estilo Axios para que funcione http.delete(...)
   delete: (path, opts) => request("DELETE", path, opts),
 
   /** Subida de archivos con FormData (no se fuerza Content-Type). */
