@@ -1,0 +1,11 @@
+// context/Alertas/ActionTypes.js
+export const GET_ALERTAS = "GET_ALERTAS";
+export const GET_ALERTAS_USUARIO = "GET_ALERTAS_USUARIO";
+export const GET_ALERTA_DETALLE = "GET_ALERTA_DETALLE";
+export const CREAR_ALERTA = "CREAR_ALERTA";
+export const ATENDER_ALERTA = "ATENDER_ALERTA";
+export const SET_LOADING = "SET_LOADING";
+export const SET_ERROR = "SET_ERROR";
+export const CLEAR_ERROR = "CLEAR_ERROR";
+export const SET_NOTIFICATION = "SET_NOTIFICATION";
+export const CLEAR_NOTIFICATION = "CLEAR_NOTIFICATION";
