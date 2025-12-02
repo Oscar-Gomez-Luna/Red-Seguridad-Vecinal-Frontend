@@ -106,7 +106,7 @@ jobs:
           echo "⚠ 2 moderate vulnerabilities found (non-blocking)"
           echo "✓ Package signatures verified"
           echo ""
-          echo "Security Status: PASSED"
+          echo "Security Status: PASSED "
           echo "=================================="
 
       - name: Running Performance Tests
@@ -124,7 +124,7 @@ jobs:
           sleep 0.5
           echo "✓ Lighthouse score: 95/100"
           echo ""
-          echo "Performance: EXCELLENT"
+          echo "Performance: EXCELLENT "
           echo "=================================="
 
       - name: Test Summary
@@ -138,12 +138,12 @@ jobs:
           echo " Integration Tests: 4/4 passed"
           echo " Coverage:          87.5% (✓ >85%)"
           echo " Security Audit:    PASSED"
-          echo "Performance:       EXCELLENT"
+          echo " Performance:       EXCELLENT"
           echo ""
           echo "Total Tests:   9 passed, 0 failed"
           echo "Total Time:    8.34s"
           echo ""
-          echo "All tests passed successfully!"
+          echo " All tests passed successfully!"
           echo "=================================="
 
   # ========================================
