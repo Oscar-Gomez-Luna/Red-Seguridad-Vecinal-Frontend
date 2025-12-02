@@ -3,23 +3,114 @@ trigger:
 
 pool:
   name: 'AgenteLocal'
+  demands:
+    - agent.name -equals LAPTOP-GLDNITHE
 
-steps:
-- task: NodeTool@0
-  inputs:
-    versionSpec: '20.x'
-  displayName: 'Install Node.js'
+variables:
+- group: SWA-Deployment-Secrets
+- name: MY_APP_LOCATION
+  value: "/"
+- name: MY_OUTPUT_LOCATION
+  value: "dist"
 
-# Usar batch/cmd
-- task: CmdLine@2
-  inputs:
-    script: |
-      npm ci
-      npm run build
-  displayName: 'npm install and build'
+stages:
+- stage: Build
+  displayName: "Build Stage"
+  jobs:
+  - job: BuildJob
+    displayName: "Compilar con Yarn y Vite"
+    steps:
 
-- task: PublishBuildArtifacts@1
-  inputs:
-    PathtoPublish: 'dist'
-    ArtifactName: 'drop'
-  displayName: 'Publish artifacts'
+    # Instalar Node.js
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '20.x'
+      displayName: "Instalar Node.js"
+
+    # Verificar versiones
+    - task: CmdLine@2
+      inputs:
+        script: |
+          node --version
+          npm --version
+          yarn --version
+      displayName: "Verificar versiones"
+      continueOnError: true
+
+    # Limpiar cache y node_modules (opcional pero recomendado)
+    - task: CmdLine@2
+      inputs:
+        script: |
+          if exist node_modules rmdir /s /q node_modules
+          if exist dist rmdir /s /q dist
+          yarn cache clean
+      displayName: "Limpiar cache"
+      continueOnError: true
+
+    # Instalar dependencias
+    - task: CmdLine@2
+      inputs:
+        script: yarn install --frozen-lockfile
+      displayName: "Instalar dependencias"
+
+    # Compilar proyecto
+    - task: CmdLine@2
+      inputs:
+        script: yarn build
+      displayName: "Compilar proyecto"
+      env:
+        CI: true
+        NODE_ENV: production
+
+    # Diagnóstico de carpeta dist
+    - task: CmdLine@2
+      inputs:
+        script: |
+          echo --- DIAGNOSTICO ---
+          dir
+          if exist $(MY_OUTPUT_LOCATION) (
+            echo Contenido de $(MY_OUTPUT_LOCATION):
+            dir $(MY_OUTPUT_LOCATION)
+          ) else (
+            echo ERROR: La carpeta $(MY_OUTPUT_LOCATION) no existe
+            exit /b 1
+          )
+      displayName: "Diagnóstico de carpeta dist"
+
+    # Publicar artefactos
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: "$(MY_OUTPUT_LOCATION)"
+        ArtifactName: "dist"
+        publishLocation: "Container"
+      displayName: "Publicar artefactos"
+
+- stage: Deploy
+  displayName: "Deploy Stage"
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - job: DeployJob
+    displayName: "Desplegar a Static Web Apps"
+    steps:
+
+    # Descargar artefactos del build
+    - download: current
+      artifact: dist
+      displayName: "Descargar artefactos"
+
+    # Mostrar contenido descargado
+    - task: CmdLine@2
+      inputs:
+        script: |
+          echo Contenido descargado:
+          dir "$(Pipeline.Workspace)\dist"
+      displayName: "Verificar artefactos descargados"
+
+    # Deploy a Azure Static Web App
+    - task: AzureStaticWebApp@0
+      displayName: "Deploy to Azure Static Web App"
+      inputs:
+        app_location: "$(Pipeline.Workspace)/dist"
+        skip_app_build: true
+        azure_static_web_apps_api_token: "$(SWA_DEPLOYMENT_TOKEN)"
