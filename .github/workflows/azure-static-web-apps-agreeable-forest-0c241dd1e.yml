@@ -10,6 +10,9 @@ on:
       - master
 
 jobs:
+  # ========================================
+  # FASE 1: TEST
+  # ========================================
   test:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
@@ -43,11 +46,14 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: coverage/
 
+  # ========================================
+  # FASE 2: BUILD
+  # ========================================
   build:
     needs: test
     runs-on: ubuntu-latest
@@ -74,12 +80,15 @@ jobs:
           NODE_ENV: production
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
           retention-days: 1
 
+  # ========================================
+  # FASE 3: DEPLOY
+  # ========================================
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -92,7 +101,7 @@ jobs:
           lfs: false
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist/
@@ -114,6 +123,9 @@ jobs:
           echo "✅ Deployment completed successfully!"
           echo "🌐 URL: ${{ steps.deploy.outputs.static_web_app_url }}"
 
+  # ========================================
+  # JOB: CLOSE PULL REQUEST
+  # ========================================
   close_pull_request:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
