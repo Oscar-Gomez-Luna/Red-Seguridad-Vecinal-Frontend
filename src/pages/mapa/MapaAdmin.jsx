@@ -12,6 +12,23 @@ import {
 import MarcadorForm from "./MarcadorForm";
 import { useAuth } from "@/context/AuthContext";
 import MapaContext from "@/context/Mapa/MapaContext";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+// Importar imágenes de Leaflet
+import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
+import iconUrl from "leaflet/dist/images/marker-icon.png";
+import shadowUrl from "leaflet/dist/images/marker-shadow.png";
+
+// Configurar iconos por defecto
+delete L.Icon.Default.prototype._getIconUrl;
+
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl,
+  iconUrl,
+  shadowUrl,
+});
+// ================================
 
 // Colores por tipo de indicador
 const indicadorConfig = {
@@ -143,7 +160,6 @@ export default function MapaAdmin() {
       };
 
       if (mode === "create") {
-        // Agregar usuarioID si está disponible
         const usuarioID = user?.id || null;
         if (usuarioID != null) {
           payload.usuarioID = usuarioID;
