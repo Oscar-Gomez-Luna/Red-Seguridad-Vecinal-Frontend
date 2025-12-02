@@ -147,27 +147,24 @@ jobs:
           echo "=================================="
 
   # ========================================
-  # FASE 2: BUILD (producción)
+  # FASE 2: BUILD AND DEPLOY (SOLUCIÓN CORREGIDA)
   # ========================================
-  build_production:
+  build_and_deploy:
     needs: test
-    if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    name: Build Production
-    outputs:
-      commit_hash: ${{ steps.get_commit.outputs.hash }}
+    name: Build and Deploy Phase
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: Get commit hash
-        id: get_commit
-        run: echo "hash=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        with:
+          submodules: true
+          lfs: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: "20"
+          cache: "yarn"
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
@@ -177,49 +174,26 @@ jobs:
         env:
           NODE_ENV: production
           PUBLIC_URL: "/"
-          GENERATE_SOURCEMAP: false
+          CI: false
+          GENERATE_SOURCEMAP: false # Reduce tamaño de archivos
 
-      - name: Archive production artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: production-build-${{ steps.get_commit.outputs.hash }}
-          path: dist/
-          retention-days: 7
-
-  # ========================================
-  # FASE 3: DEPLOY (producción)
-  # ========================================
-  deploy_production:
-    needs: build_production
-    runs-on: ubuntu-latest
-    name: Deploy to Production
-    environment:
-      name: production
-      url: https://agreeable-forest-0c241dd1e.azurestaticapps.net
-    steps:
-      - name: Checkout code (IMPORTANTE: necesario para SWA)
-        uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: "20"
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: production-build-${{ needs.build_production.outputs.commit_hash }}
-          path: temp-dist
-
-      - name: Copy artifacts to dist folder
+      - name: Clean up build directory
         run: |
-          rm -rf dist
-          cp -r temp-dist dist
-          echo "Build files ready:"
-          ls -la dist/
+          echo "Cleaning up build directory..."
+          # Eliminar archivos innecesarios para reducir el número total
+          find ./dist -name "*.map" -type f -delete
+          find ./dist -name "*.log" -type f -delete
+          find ./dist -name "*.txt" -type f -delete
+          find ./dist -name "test*" -type f -delete
+          find ./dist -name "*.md" -type f -delete
+
+          # Contar archivos resultantes
+          echo "Total files in dist:"
+          find ./dist -type f | wc -l
+
+          # Listar los 10 archivos más grandes
+          echo "Top 10 largest files:"
+          find ./dist -type f -exec ls -lh {} + | sort -rh -k5 | head -10
 
       - name: Deploy to Azure Static Web Apps
         id: deploy
@@ -228,59 +202,17 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_AGREEABLE_FOREST_0C241DD1E }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
-          app_location: "/"
-          api_location: ""
-          output_location: "dist"
+          app_location: "/dist" # Especificamos explícitamente la carpeta dist
+          api_location: "" # Dejamos vacío si no tenemos API
+          output_location: "" # Vacío porque app_location ya apunta a dist
           skip_app_build: true
+          verbose: true # Para debugging
 
       - name: Deployment summary
         run: |
-          echo "✅ Deployment completed successfully!"
-          echo "🌐 URL: ${{ steps.deploy.outputs.static_web_app_url }}"
-
-  # ========================================
-  # FASE 4: BUILD & DEPLOY PR (preview)
-  # ========================================
-  build_deploy_preview:
-    needs: test
-    if: github.event_name == 'pull_request' && github.event.action != 'closed'
-    runs-on: ubuntu-latest
-    name: Build and Deploy Preview
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: "20"
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Build application
-        run: yarn build
-        env:
-          NODE_ENV: production
-          PUBLIC_URL: "/"
-          GENERATE_SOURCEMAP: false
-
-      - name: Deploy to Azure Static Web Apps (Preview)
-        id: deploy
-        uses: Azure/static-web-apps-deploy@v1
-        with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_AGREEABLE_FOREST_0C241DD1E }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          action: "upload"
-          app_location: "/"
-          api_location: ""
-          output_location: "dist"
-          skip_app_build: true
-
-      - name: Preview deployment summary
-        run: |
-          echo "✅ Preview deployment completed!"
-          echo "🔗 URL: ${{ steps.deploy.outputs.static_web_app_url }}"
+          echo " Deployment completed successfully!"
+          echo " URL: ${{ steps.deploy.outputs.static_web_app_url }}"
+          echo " Deployment status: ${{ steps.deploy.outputs.static_web_app_deployment_status }}"
 
   # ========================================
   # JOB: CLOSE PULL REQUEST
