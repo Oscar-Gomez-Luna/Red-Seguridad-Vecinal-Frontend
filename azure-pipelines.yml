@@ -3,64 +3,23 @@ trigger:
 
 pool:
   name: 'AgenteLocal'
-  demands:
-    - agent.name -equals LAPTOP-GLDNITHE
 
-variables:
-- group: SWA-Deployment-Secrets
-- name: MY_APP_LOCATION
-  value: "/"
-- name: MY_OUTPUT_LOCATION
-  value: "dist"
+steps:
+- task: NodeTool@0
+  inputs:
+    versionSpec: '20.x'
+  displayName: 'Install Node.js'
 
-stages:
-- stage: Build
-  displayName: "Build Stage"
-  jobs:
-  - job: BuildJob
-    displayName: "Compilar con Yarn y Vite"
-    steps:
+# Usar batch/cmd
+- task: CmdLine@2
+  inputs:
+    script: |
+      npm ci
+      npm run build
+  displayName: 'npm install and build'
 
-    - task: NodeTool@0
-      inputs:
-        versionSpec: '20.x'
-      displayName: "Instalar Node.js"
-
-    - powershell: yarn install --frozen-lockfile
-      displayName: "Instalar dependencias"
-
-    - powershell: yarn build
-      displayName: "Compilar proyecto"
-
-    - powershell: |
-        Write-Host "--- DIAGNOSTICO ---"
-        Get-ChildItem
-        Get-ChildItem "$(MY_OUTPUT_LOCATION)"
-      displayName: "Diagnóstico de carpeta dist"
-      continueOnError: true
-
-    - task: PublishBuildArtifacts@1
-      inputs:
-        PathtoPublish: "$(MY_OUTPUT_LOCATION)"
-        ArtifactName: "dist"
-        publishLocation: "Container"
-      displayName: "Publicar artefactos"
-
-- stage: Deploy
-  displayName: "Deploy Stage"
-  dependsOn: Build
-  condition: succeeded()
-  jobs:
-  - job: DeployJob
-    displayName: "Desplegar a Static Web Apps"
-    steps:
-
-    - download: current
-      artifact: dist
-
-    - task: AzureStaticWebApp@0
-      displayName: "Deploy to Azure Static Web App"
-      inputs:
-        app_location: "$(MY_APP_LOCATION)"
-        output_location: "$(MY_OUTPUT_LOCATION)"
-        azure_static_web_apps_api_token: "$(SWA_DEPLOYMENT_TOKEN)"
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: 'dist'
+    ArtifactName: 'drop'
+  displayName: 'Publish artifacts'
