@@ -2,13 +2,16 @@ trigger:
 - master
 
 pool:
-  name: AgenteLocal
-  demands: agent.name -equals LAPTOP-GLDNITHE
+  name: 'AgenteLocal'
+  demands:
+   - agent.name -equals LAPTOP-GLDNITHE
 
 variables:
   azureSubscription: 'AzureConnection'
-  webAppName: 'lively-tree-00851061e.3'
-  buildOutputFolder: 'dist'   # Vite SIEMPRE genera "dist"
+  # Verifica en Azure que este sea el nombre EXACTO (sin espacios ni .3 al final)
+  webAppName: 'lively-tree-00851061e'
+  # CORRECCIÓN PRINCIPAL: Cambiado de 'dist' a 'build' (estándar en React)
+  buildOutputFolder: 'build'
 
 stages:
 - stage: Build
@@ -17,31 +20,34 @@ stages:
   - job: BuildJob
     displayName: 'Compilar con Yarn'
     steps:
-
     - task: NodeTool@0
       inputs:
         versionSpec: '20.x'
       displayName: 'Instalar Node.js'
 
-    # Instalación y Build
     - script: |
         yarn install --frozen-lockfile
         yarn build
       displayName: 'Yarn Install y Build'
 
-    # Mostrar archivos para depuración
+    # CORRECCIÓN: Diagnóstico seguro (no falla si la carpeta no existe)
     - script: |
-        echo "Archivos en el repositorio:"
+        echo "--- DIAGNOSTICO DE CARPETAS ---"
+        echo "Contenido de la raíz:"
         dir
-        echo "Contenido de la carpeta dist:"
-        dir dist
-      displayName: 'Mostrar archivos después del build'
+        echo "-----------------------------"
+        echo "Buscando carpeta build:"
+        if exist build ( echo "CARPETA BUILD ENCONTRADA" ) else ( echo "NO SE ENCONTRO BUILD" )
+        echo "Buscando carpeta dist:"
+        if exist dist ( echo "CARPETA DIST ENCONTRADA" ) else ( echo "NO SE ENCONTRO DIST" )
+      displayName: 'Verificar carpetas generadas'
+      continueOnError: true
 
-    # Empaquetado
     - task: ArchiveFiles@2
       displayName: 'Comprimir archivos de compilación'
       inputs:
-        rootFolderOrFile: '$(System.DefaultWorkingDirectory)/dist'
+        # Usamos la variable 'build' definida arriba
+        rootFolderOrFile: '$(System.DefaultWorkingDirectory)/$(buildOutputFolder)'
         includeRootFolder: false
         archiveType: 'zip'
         archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
@@ -66,7 +72,6 @@ stages:
       runOnce:
         deploy:
           steps:
-
           - task: AzureWebApp@1
             displayName: 'Azure Web App Deploy'
             inputs:
