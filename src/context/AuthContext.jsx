@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+const apiBaseUrl = "https://red-seguridad-vecinal.azurewebsites.net/api";
 
 const AuthContext = createContext();
 
