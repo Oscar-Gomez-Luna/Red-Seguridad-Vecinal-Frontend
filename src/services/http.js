@@ -2,9 +2,7 @@
 
 // Base del backend (ej. http://localhost:5165).
 // Usa VITE_API_BASE_URL si existe; si no, por defecto localhost:5165
-const API_BASE = (
-  import.meta.env.VITE_API_BASE_URL
-).replace(/\/$/, "");
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 const API_PREFIX = "";
 
