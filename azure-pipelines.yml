@@ -1,0 +1,72 @@
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  # CAMBIA ESTO: Nombre de tu conexión en Azure DevOps
+  azureSubscription: 'AzureConnection'
+  # CAMBIA ESTO: Nombre de tu App Service
+  webAppName: 'lively-tree-00851061e.3'
+  # IMPORTANTE: Revisa si yarn build genera una carpeta 'build' o 'dist'
+  # Si usas Vite suele ser 'dist'. Si usas Create React App suele ser 'build'.
+  buildOutputFolder: 'build'
+
+stages:
+- stage: Build
+  displayName: 'Build Stage'
+  jobs:
+  - job: BuildJob
+    displayName: 'Compilar con Yarn'
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '20.x'
+      displayName: 'Instalar Node.js'
+
+    # PASO CLAVE MODIFICADO PARA YARN
+    - script: |
+        yarn install --frozen-lockfile
+        yarn build
+      displayName: 'Yarn Install y Build'
+      # '--frozen-lockfile' es vital: asegura que se usen las versiones EXACTAS de tu yarn.lock
+      # Si este paso falla, significa que tu yarn.lock local no coincide con package.json.
+
+    - task: ArchiveFiles@2
+      displayName: 'Comprimir archivos de compilación'
+      inputs:
+        rootFolderOrFile: '$(System.DefaultWorkingDirectory)/$(buildOutputFolder)'
+        includeRootFolder: false
+        archiveType: 'zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+        replaceExistingArchive: true
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publicar Artefacto'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'drop'
+        publishLocation: 'Container'
+
+- stage: Deploy
+  displayName: 'Deploy Stage'
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - deployment: DeployJob
+    displayName: 'Desplegar a App Service'
+    environment: 'production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureWebApp@1
+            displayName: 'Azure Web App Deploy'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appType: 'webAppLinux'
+              appName: $(webAppName)
+              package: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
+              # Este comando usa PM2 para servir la carpeta estática generada por Yarn
+              startUpCommand: 'pm2 serve /home/site/wwwroot --no-daemon --spa'
