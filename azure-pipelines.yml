@@ -9,7 +9,7 @@ pool:
 
 variables:
   azureSubscription: 'AzureConnection'
-  webAppName: 'lively-tree-00851061e' 
+  webAppName: 'red-seguridad-vecinal-app' 
   # CORRECCIÓN VITAL: Vite build genera 'dist'
   buildOutputFolder: 'dist' 
 
