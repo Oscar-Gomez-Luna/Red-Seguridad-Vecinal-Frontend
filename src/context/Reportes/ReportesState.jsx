@@ -245,6 +245,7 @@ export default function ReportesState({ children }) {
 
       const avisoCreado = await createAviso(avisoData);
       console.log("Aviso creado automáticamente:", avisoCreado);
+      location.reload();
       return avisoCreado;
     } catch (error) {
       console.error("No se pudo crear el aviso automáticamente:", error);

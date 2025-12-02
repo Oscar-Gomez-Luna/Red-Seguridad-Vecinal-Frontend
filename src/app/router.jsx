@@ -47,12 +47,11 @@ import AmenidadesList from "../pages/amenidades/AmenidadesList";
 import ReservasList from "../pages/reservas/ReservasList";
 
 import NotFound from "../pages/misc/NotFound";
+import RoleProtectedRoute from "./RoleProtectedRoute";
 
 export const router = createBrowserRouter([
-  // Público
   { path: "/auth/login", element: <Login /> },
 
-  // Área protegida (admin)
   {
     path: "/",
     element: (
@@ -61,98 +60,191 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      // Redirecciones base
-      { index: true, element: <Navigate to="/admin/dashboard" replace /> },
-      { path: "admin", element: <Navigate to="/admin/dashboard" replace /> },
+      // Redirección inteligente según rol
+      {
+        index: true,
+        element: <Navigate to="/admin/dashboard" replace />,
+      },
+      {
+        path: "admin",
+        element: <RoleBasedRedirect />,
+      },
 
-      // Dashboard
-      { path: "admin/dashboard", element: <Dashboard /> },
+      // Dashboard - Solo Admin
+      {
+        path: "admin/dashboard",
+        element: (
+          <RoleProtectedRoute allowedRoles={["Admin"]}>
+            <Dashboard />
+          </RoleProtectedRoute>
+        ),
+      },
 
-      // Perfil del usuario logeado
+      // Perfil - Todos
       { path: "admin/perfil", element: <MiPerfil /> },
 
-      // Usuarios residentes
+      // Alertas - Admin y Guardia
       {
-        path: "admin/usuarios/residentes",
-        element: <UsuariosList />,
+        path: "admin/alertas",
+        element: (
+          <RoleProtectedRoute allowedRoles={["Admin", "Guardia"]}>
+            <AdminAlertasPage />
+          </RoleProtectedRoute>
+        ),
+      },
+      {
+        path: "admin/alertas/:id",
+        element: (
+          <RoleProtectedRoute allowedRoles={["Admin", "Guardia"]}>
+            <AdminAlertaDetalle />
+          </RoleProtectedRoute>
+        ),
       },
 
-      //  Personal de mantenimiento
-      {
-        path: "admin/usuarios/personal",
-        element: <PersonalMantenimientoList />,
-      },
-
-      // Invitados (vista admin: todas las invitaciones)
-      {
-        path: "admin/accesos/invitados",
-        element: <InvitadosList />,
-      },
-
-      // QR personales
-      {
-        path: "admin/accesos/qr-personales",
-        element: <QRPersonalList />,
-      },
-
-      // Mapa
+      // Mapa - Admin y Guardia
       {
         path: "admin/mapa",
-        element: <MapaAdmin />,
+        element: (
+          <RoleProtectedRoute allowedRoles={["Admin", "Guardia"]}>
+            <MapaAdmin />
+          </RoleProtectedRoute>
+        ),
       },
 
-      // *** Amenidades (ruta para el sidebar) ***
+      // Usuarios - Solo Admin
+      {
+        path: "admin/usuarios/residentes",
+        element: (
+          <RoleProtectedRoute allowedRoles={["Admin"]}>
+            <UsuariosList />
+          </RoleProtectedRoute>
+        ),
+      },
+      {
+        path: "admin/usuarios/personal",
+        element: (
+          <RoleProtectedRoute allowedRoles={["Admin"]}>
+            <PersonalMantenimientoList />
+          </RoleProtectedRoute>
+        ),
+      },
+
+      // Accesos - Solo Admin
+      {
+        path: "admin/accesos/invitados",
+        element: (
+          <RoleProtectedRoute allowedRoles={["Admin"]}>
+            <InvitadosList />
+          </RoleProtectedRoute>
+        ),
+      },
+      {
+        path: "admin/accesos/qr-personales",
+        element: (
+          <RoleProtectedRoute allowedRoles={["Admin"]}>
+            <QRPersonalList />
+          </RoleProtectedRoute>
+        ),
+      },
+
+      // Amenidades - Solo Admin
       {
         path: "admin/amenidades/amenidades",
-        element: <AmenidadesList />,
+        element: (
+          <RoleProtectedRoute allowedRoles={["Admin"]}>
+            <AmenidadesList />
+          </RoleProtectedRoute>
+        ),
       },
-
-      // *** Reservas de amenidades ***
       {
         path: "admin/amenidades/reservas",
-        element: <ReservasList />,
+        element: (
+          <RoleProtectedRoute allowedRoles={["Admin"]}>
+            <ReservasList />
+          </RoleProtectedRoute>
+        ),
       },
 
-      // Avisos
-      { path: "admin/avisos", element: <Avisos /> },
+      // Avisos - Solo Admin
+      {
+        path: "admin/avisos",
+        element: (
+          <RoleProtectedRoute allowedRoles={["Admin"]}>
+            <Avisos />
+          </RoleProtectedRoute>
+        ),
+      },
 
-      // Reportes (lista + detalle)
-      { path: "admin/reportes", element: <Reportes /> },
-      { path: "admin/reportes/:id", element: <ReporteDetail /> },
+      // Reportes - Solo Admin
+      {
+        path: "admin/reportes",
+        element: (
+          <RoleProtectedRoute allowedRoles={["Admin"]}>
+            <Reportes />
+          </RoleProtectedRoute>
+        ),
+      },
+      {
+        path: "admin/reportes/:id",
+        element: (
+          <RoleProtectedRoute allowedRoles={["Admin"]}>
+            <ReporteDetail />
+          </RoleProtectedRoute>
+        ),
+      },
 
-      // Finanzas
+      // Finanzas - Solo Admin
       {
         path: "admin/finanzas/cargos-mantenimiento",
-        element: <CargosMantenimiento />,
+        element: (
+          <RoleProtectedRoute allowedRoles={["Admin"]}>
+            <CargosMantenimiento />
+          </RoleProtectedRoute>
+        ),
       },
       {
         path: "admin/finanzas/cargos-servicios",
-        element: <CargosServicios />,
+        element: (
+          <RoleProtectedRoute allowedRoles={["Admin"]}>
+            <CargosServicios />
+          </RoleProtectedRoute>
+        ),
       },
 
-      // Servicios - Catálogo
+      // Servicios - Solo Admin
       {
         path: "admin/servicios/catalogo",
-        element: <ServicesList />,
+        element: (
+          <RoleProtectedRoute allowedRoles={["Admin"]}>
+            <ServicesList />
+          </RoleProtectedRoute>
+        ),
       },
-
-      // Servicios - Solicitudes
       {
         path: "admin/servicios/solicitudes",
-        element: <SolicitudesList />,
+        element: (
+          <RoleProtectedRoute allowedRoles={["Admin"]}>
+            <SolicitudesList />
+          </RoleProtectedRoute>
+        ),
       },
 
-      // Alertas
-      { path: "admin/alertas", element: <AdminAlertasPage /> },
-      { path: "admin/alertas/:id", element: <AdminAlertaDetalle /> },
-
-      // 404 interno
       { path: "*", element: <NotFound /> },
     ],
   },
 
-  // 404 global
   { path: "*", element: <NotFound /> },
 ]);
+
+// Componente auxiliar para redirigir según rol
+function RoleBasedRedirect() {
+  const { user } = useAuth();
+
+  if (user?.tipoUsuario === "Guardia") {
+    return <Navigate to="/admin/alertas" replace />;
+  }
+
+  return <Navigate to="/admin/dashboard" replace />;
+}
 
 export default router;

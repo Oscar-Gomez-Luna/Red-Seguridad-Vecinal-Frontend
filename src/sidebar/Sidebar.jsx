@@ -21,6 +21,12 @@ export default function Sidebar() {
       collapsed ? "justify-center" : "",
     ].join(" ");
 
+  // Función para verificar si el usuario tiene acceso a una sección
+  const hasAccess = (roles) => {
+    if (!user) return false;
+    return roles.includes(user.tipoUsuario);
+  };
+
   return (
     <aside
       className={[
@@ -56,6 +62,10 @@ export default function Sidebar() {
                     title={user.online ? "En línea" : "Desconectado"}
                   />
                   <span>{user.online ? "Online" : "Offline"}</span>
+                  {/* Mostrar rol del usuario */}
+                  <span className="ml-1 text-emerald-100">
+                    • {user.tipoUsuario}
+                  </span>
                 </div>
               </div>
             )}
@@ -74,173 +84,211 @@ export default function Sidebar() {
 
       {/* NAV (tus rutas) */}
       <nav className="p-4 space-y-5 flex-1 overflow-y-auto">
-        <div>
-          {!collapsed && (
-            <p className="px-3 mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Inicio
-            </p>
-          )}
-          <NavLink to="/admin/dashboard" className={linkCls} title="Dashboard">
-            <span className="text-emerald-700">{Icon.home}</span>
-            {!collapsed && <span>Dashboard</span>}
-          </NavLink>
-        </div>
+        {/* Dashboard - Solo Admin */}
+        {hasAccess(["Admin"]) && (
+          <div>
+            {!collapsed && (
+              <p className="px-3 mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Inicio
+              </p>
+            )}
+            <NavLink
+              to="/admin/dashboard"
+              className={linkCls}
+              title="Dashboard"
+            >
+              <span className="text-emerald-700">{Icon.home}</span>
+              {!collapsed && <span>Dashboard</span>}
+            </NavLink>
+          </div>
+        )}
 
+        {/* Seguridad comunitaria - Admin y Guardia tienen diferentes permisos */}
         <div className="space-y-1">
           {!collapsed && (
             <p className="px-3 mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
               Seguridad comunitaria
             </p>
           )}
-          <NavLink to="/admin/reportes" className={linkCls} title="Reportes">
-            <span className="text-emerald-700">{Icon.warn}</span>
-            {!collapsed && <span>Reportes</span>}
-          </NavLink>
-          <NavLink
-            to="/admin/alertas"
-            className={linkCls}
-            title="Alertas de pánico"
-          >
-            <span className="text-emerald-700">{Icon.bell}</span>
-            {!collapsed && <span>Alertas de pánico</span>}
-          </NavLink>
 
-          <NavLink to="/admin/avisos" className={linkCls} title="Avisos">
-            <span className="text-emerald-700">{Icon.file}</span>
-            {!collapsed && <span>Avisos</span>}
-          </NavLink>
-          {/* Mapa de zonas */}
-          <NavLink to="/admin/mapa" className={linkCls} title="Mapa de zonas">
-            <span className="text-emerald-700">{Icon.map}</span>
-            {!collapsed && <span>Mapa</span>}
-          </NavLink>
-        </div>
-
-        <div className="space-y-1">
-          {!collapsed && (
-            <p className="px-3 mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Accesos
-            </p>
-          )}
-          <NavLink
-            to="/admin/accesos/qr-personales"
-            className={linkCls}
-            title="QR personales"
-            end
-          >
-            <span className="text-emerald-700 text-lg">{Icon.qr}</span>
-            {!collapsed && <span>QR personales</span>}
-          </NavLink>
-
-          <NavLink
-            to="/admin/accesos/invitados"
-            className={linkCls}
-            title="Invitados"
-          >
-            <span className="text-emerald-700">{Icon.people}</span>
-            {!collapsed && <span>Invitados</span>}
-          </NavLink>
-        </div>
-
-        <div className="space-y-1">
-          {!collapsed && (
-            <p className="px-3 mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Amenidades
-            </p>
-          )}
-          <NavLink
-            to="/admin/amenidades/amenidades"
-            className={linkCls}
-            title="Amenidades"
-          >
-            <span className="text-emerald-700">{Icon.building}</span>
-            {!collapsed && <span>Amenidades</span>}
-          </NavLink>
-          <NavLink
-            to="/admin/amenidades/reservas"
-            className={linkCls}
-            title="Reservas"
-          >
-            <span className="text-emerald-700">{Icon.calendar}</span>
-            {!collapsed && <span>Reservas</span>}
-          </NavLink>
-        </div>
-
-        <div className="space-y-1">
-          {!collapsed && (
-            <p className="px-3 mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Servicios
-            </p>
-          )}
-          <NavLink
-            to="/admin/servicios/catalogo"
-            className={linkCls}
-            title="Catálogo de servicios"
-          >
-            <span className="text-emerald-700">{Icon.toolbox}</span>
-            {!collapsed && <span>Catálogo</span>}
-          </NavLink>
-
-          <NavLink
-            to="/admin/servicios/solicitudes"
-            className={linkCls}
-            title="Solicitudes de servicio"
-          >
-            <span className="text-emerald-700">{Icon.file}</span>
-            {!collapsed && <span>Solicitudes</span>}
-          </NavLink>
-        </div>
-
-        <div className="space-y-1">
-          {!collapsed && (
-            <p className="px-3 mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Finanzas
-            </p>
+          {/* Reportes - Solo Admin */}
+          {hasAccess(["Admin"]) && (
+            <NavLink to="/admin/reportes" className={linkCls} title="Reportes">
+              <span className="text-emerald-700">{Icon.warn}</span>
+              {!collapsed && <span>Reportes</span>}
+            </NavLink>
           )}
 
-          <NavLink
-            to="/admin/finanzas/cargos-mantenimiento"
-            className={linkCls}
-            title="Cargos mantenimiento"
-          >
-            <span className="text-emerald-700">{Icon.receipt}</span>
-            {!collapsed && <span>Cargos mantenimiento</span>}
-          </NavLink>
-          <NavLink
-            to="/admin/finanzas/cargos-servicios"
-            className={linkCls}
-            title="Cargos de servicios"
-          >
-            <span className="text-emerald-700">{Icon.file}</span>
-            {!collapsed && <span>Cargos de servicios</span>}
-          </NavLink>
-        </div>
-
-        <div className="space-y-1">
-          {!collapsed && (
-            <p className="px-3 mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Usuarios
-            </p>
+          {/* Alertas - Admin y Guardia */}
+          {hasAccess(["Admin", "Guardia"]) && (
+            <NavLink
+              to="/admin/alertas"
+              className={linkCls}
+              title="Alertas de pánico"
+            >
+              <span className="text-emerald-700">{Icon.bell}</span>
+              {!collapsed && <span>Alertas de pánico</span>}
+            </NavLink>
           )}
-          <NavLink
-            to="/admin/usuarios/residentes"
-            className={linkCls}
-            title="Residentes"
-          >
-            <span className="text-emerald-700">{Icon.user}</span>
-            {!collapsed && <span>Usuarios</span>}
-          </NavLink>
 
-          <NavLink
-            to="/admin/usuarios/personal"
-            className={linkCls}
-            title="Personal mantenimiento"
-          >
-            <span className="text-emerald-700">{Icon.toolbox}</span>
-            {!collapsed && <span>Personal mantenimiento</span>}
-          </NavLink>
+          {/* Avisos - Solo Admin */}
+          {hasAccess(["Admin"]) && (
+            <NavLink to="/admin/avisos" className={linkCls} title="Avisos">
+              <span className="text-emerald-700">{Icon.file}</span>
+              {!collapsed && <span>Avisos</span>}
+            </NavLink>
+          )}
+
+          {/* Mapa - Admin y Guardia */}
+          {hasAccess(["Admin", "Guardia"]) && (
+            <NavLink to="/admin/mapa" className={linkCls} title="Mapa de zonas">
+              <span className="text-emerald-700">{Icon.map}</span>
+              {!collapsed && <span>Mapa</span>}
+            </NavLink>
+          )}
         </div>
 
+        {/* Accesos - Solo Admin */}
+        {hasAccess(["Admin"]) && (
+          <div className="space-y-1">
+            {!collapsed && (
+              <p className="px-3 mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Accesos
+              </p>
+            )}
+            <NavLink
+              to="/admin/accesos/qr-personales"
+              className={linkCls}
+              title="QR personales"
+              end
+            >
+              <span className="text-emerald-700 text-lg">{Icon.qr}</span>
+              {!collapsed && <span>QR personales</span>}
+            </NavLink>
+
+            <NavLink
+              to="/admin/accesos/invitados"
+              className={linkCls}
+              title="Invitados"
+            >
+              <span className="text-emerald-700">{Icon.people}</span>
+              {!collapsed && <span>Invitados</span>}
+            </NavLink>
+          </div>
+        )}
+
+        {/* Amenidades - Solo Admin */}
+        {hasAccess(["Admin"]) && (
+          <div className="space-y-1">
+            {!collapsed && (
+              <p className="px-3 mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Amenidades
+              </p>
+            )}
+            <NavLink
+              to="/admin/amenidades/amenidades"
+              className={linkCls}
+              title="Amenidades"
+            >
+              <span className="text-emerald-700">{Icon.building}</span>
+              {!collapsed && <span>Amenidades</span>}
+            </NavLink>
+            <NavLink
+              to="/admin/amenidades/reservas"
+              className={linkCls}
+              title="Reservas"
+            >
+              <span className="text-emerald-700">{Icon.calendar}</span>
+              {!collapsed && <span>Reservas</span>}
+            </NavLink>
+          </div>
+        )}
+
+        {/* Servicios - Solo Admin */}
+        {hasAccess(["Admin"]) && (
+          <div className="space-y-1">
+            {!collapsed && (
+              <p className="px-3 mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Servicios
+              </p>
+            )}
+            <NavLink
+              to="/admin/servicios/catalogo"
+              className={linkCls}
+              title="Catálogo de servicios"
+            >
+              <span className="text-emerald-700">{Icon.toolbox}</span>
+              {!collapsed && <span>Catálogo</span>}
+            </NavLink>
+
+            <NavLink
+              to="/admin/servicios/solicitudes"
+              className={linkCls}
+              title="Solicitudes de servicio"
+            >
+              <span className="text-emerald-700">{Icon.file}</span>
+              {!collapsed && <span>Solicitudes</span>}
+            </NavLink>
+          </div>
+        )}
+
+        {/* Finanzas - Solo Admin */}
+        {hasAccess(["Admin"]) && (
+          <div className="space-y-1">
+            {!collapsed && (
+              <p className="px-3 mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Finanzas
+              </p>
+            )}
+
+            <NavLink
+              to="/admin/finanzas/cargos-mantenimiento"
+              className={linkCls}
+              title="Cargos mantenimiento"
+            >
+              <span className="text-emerald-700">{Icon.receipt}</span>
+              {!collapsed && <span>Cargos mantenimiento</span>}
+            </NavLink>
+            <NavLink
+              to="/admin/finanzas/cargos-servicios"
+              className={linkCls}
+              title="Cargos de servicios"
+            >
+              <span className="text-emerald-700">{Icon.file}</span>
+              {!collapsed && <span>Cargos de servicios</span>}
+            </NavLink>
+          </div>
+        )}
+
+        {/* Usuarios - Solo Admin */}
+        {hasAccess(["Admin"]) && (
+          <div className="space-y-1">
+            {!collapsed && (
+              <p className="px-3 mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Usuarios
+              </p>
+            )}
+            <NavLink
+              to="/admin/usuarios/residentes"
+              className={linkCls}
+              title="Residentes"
+            >
+              <span className="text-emerald-700">{Icon.user}</span>
+              {!collapsed && <span>Usuarios</span>}
+            </NavLink>
+
+            <NavLink
+              to="/admin/usuarios/personal"
+              className={linkCls}
+              title="Personal mantenimiento"
+            >
+              <span className="text-emerald-700">{Icon.toolbox}</span>
+              {!collapsed && <span>Personal mantenimiento</span>}
+            </NavLink>
+          </div>
+        )}
+
+        {/* Configuración - Todos los usuarios */}
         <div className="space-y-1">
           {!collapsed && (
             <p className="px-3 mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
