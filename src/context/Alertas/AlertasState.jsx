@@ -25,7 +25,7 @@ const initialState = {
   notification: null,
 };
 
-const API = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5165/api";
+const API = import.meta.env.VITE_API_BASE_URL;
 
 const AlertasState = (props) => {
   const [state, dispatch] = useReducer(AlertasReducer, initialState);
@@ -33,7 +33,8 @@ const AlertasState = (props) => {
   const setLoading = (val) => dispatch({ type: SET_LOADING, payload: val });
   const setError = (e) => dispatch({ type: SET_ERROR, payload: e });
   const clearError = () => dispatch({ type: CLEAR_ERROR });
-  const setNotification = (n) => dispatch({ type: SET_NOTIFICATION, payload: n });
+  const setNotification = (n) =>
+    dispatch({ type: SET_NOTIFICATION, payload: n });
   const clearNotification = () => dispatch({ type: CLEAR_NOTIFICATION });
 
   const getAlertas = async () => {
@@ -47,53 +48,51 @@ const AlertasState = (props) => {
   };
 
   // OBTENER DETALLE DE UNA ALERTA
-const getAlertaDetalle = async (id) => {
-  dispatch({ type: "LOADING" });
+  const getAlertaDetalle = async (id) => {
+    dispatch({ type: "LOADING" });
 
-  try {
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/alertas/${id}`);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/alertas/${id}`);
 
-    if (!res.ok) {
-      throw new Error("No se pudo obtener el detalle de la alerta");
+      if (!res.ok) {
+        throw new Error("No se pudo obtener el detalle de la alerta");
+      }
+
+      const data = await res.json();
+
+      dispatch({
+        type: "SET_ALERTA_DETALLE",
+        payload: data,
+      });
+    } catch (error) {
+      dispatch({
+        type: "ERROR",
+        payload: error.message,
+      });
     }
+  };
 
-    const data = await res.json();
+  const atenderAlerta = async (firebaseID) => {
+    try {
+      setLoading(true);
 
-    dispatch({
-      type: "SET_ALERTA_DETALLE",
-      payload: data,
-    });
-  } catch (error) {
-    dispatch({
-      type: "ERROR",
-      payload: error.message,
-    });
-  }
-};
+      await axios.put(`${API}/alertas/firebase/${firebaseID}/estatus`, {
+        estatus: "atendida",
+      });
 
-const atenderAlerta = async (firebaseID) => {
-  try {
-    setLoading(true);
+      dispatch({
+        type: ATENDER_ALERTA,
+        payload: { firebaseID },
+      });
 
-    await axios.put(`${API}/alertas/firebase/${firebaseID}/estatus`, {
-      estatus: "atendida"
-    });
-
-    dispatch({
-      type: ATENDER_ALERTA,
-      payload: { firebaseID }
-    });
-
-    setNotification({
-      type: "success",
-      message: `Alerta atendida correctamente`
-    });
-
-  } catch (err) {
-    setError("Error al atender alerta");
-  }
-};
-
+      setNotification({
+        type: "success",
+        message: `Alerta atendida correctamente`,
+      });
+    } catch (err) {
+      setError("Error al atender alerta");
+    }
+  };
 
   const isAlertaActiva = (a) => {
     return a?.estatus?.toLowerCase() === "activa";
