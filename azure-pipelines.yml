@@ -26,10 +26,11 @@ stages:
       displayName: 'Instalar Node.js'
 
     # 1. Instalación y Build (Yarn ejecuta vite build)
-    - script: |
-        yarn build
-        yarn install --frozen-lockfile
-      displayName: 'Yarn Install y Build'
+    - script: yarn install --frozen-lockfile
+      displayName: 'Instalar Dependencias'
+
+    - script: yarn build
+      displayName: 'Compilar Proyecto'
 
     # 2. Diagnóstico final (solo si falla, para ver la carpeta dist)
     - script: |
