@@ -42,7 +42,7 @@ stages:
     - task: PublishBuildArtifacts@1
       inputs:
         PathtoPublish: "$(output_location)"
-        ArtifactName: "dist"   # Nombre literal del
+        ArtifactName: "dist"   # Nombre literal
         publishLocation: "Container"
       displayName: "Publicar artefactos"
 
