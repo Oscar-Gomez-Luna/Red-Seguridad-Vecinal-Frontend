@@ -13,7 +13,6 @@ jobs:
 - job: BuildAndDeploy
   displayName: "Build and Deploy"
   steps:
-
   - checkout: self
     displayName: "Checkout code"
 
@@ -25,25 +24,22 @@ jobs:
   - script: |
       node --version
       npm --version
-      yarn --version
     displayName: "Show versions"
 
-  - script: yarn install --frozen-lockfile
+  - script: npm ci
     displayName: "Install dependencies"
+    env:
+      CI: true
 
-  - script: yarn build
+  - script: npm run build
     displayName: "Build"
     env:
       CI: true
       NODE_ENV: production
-
-  - script: dir dist
-    displayName: "Verify dist"
 
   - task: AzureStaticWebApp@0
     inputs:
       app_location: '/'
       output_location: 'dist'
       azure_static_web_apps_api_token: $(SWA_DEPLOYMENT_TOKEN)
-      skip_app_build: true
-    displayName: "Deploy to SWA"
+    displayName: "Deploy to Azure Static Web App"
