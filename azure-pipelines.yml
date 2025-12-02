@@ -13,6 +13,7 @@ jobs:
 - job: BuildAndDeploy
   displayName: "Build and Deploy"
   steps:
+
   - checkout: self
     displayName: "Checkout code"
 
@@ -21,12 +22,13 @@ jobs:
       versionSpec: '20.x'
     displayName: "Install Node.js"
 
-  - script: |
+  - powershell: |
       node --version
       npm --version
-    displayName: "Show versions"
+      Get-ChildItem package*.json -ErrorAction SilentlyContinue
+    displayName: "Show versions and check package files"
 
-  - script: npm ci
+  - script: npm install
     displayName: "Install dependencies"
     env:
       CI: true
@@ -37,9 +39,14 @@ jobs:
       CI: true
       NODE_ENV: production
 
+  - powershell: |
+      Get-ChildItem dist -Recurse -ErrorAction SilentlyContinue | Select-Object -First 10 Name
+    displayName: "Verify dist content"
+
   - task: AzureStaticWebApp@0
     inputs:
       app_location: '/'
       output_location: 'dist'
       azure_static_web_apps_api_token: $(SWA_DEPLOYMENT_TOKEN)
-    displayName: "Deploy to Azure Static Web App"
+      skip_app_build: true
+    displayName: "Deploy to SWA"
