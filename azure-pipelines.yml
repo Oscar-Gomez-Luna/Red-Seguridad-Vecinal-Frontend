@@ -8,92 +8,42 @@ pool:
 
 variables:
 - group: SWA-Deployment-Secrets
-- name: MY_OUTPUT_LOCATION
-  value: "dist"
 
-stages:
-- stage: Build
-  displayName: "Build Stage"
-  jobs:
-  - job: BuildJob
-    displayName: "Compilar con Yarn y Vite"
-    steps:
+jobs:
+- job: BuildAndDeploy
+  displayName: "Build and Deploy"
+  steps:
 
-    # Instalar Node.js
-    - task: NodeTool@0
-      inputs:
-        versionSpec: '20.x'
-      displayName: "Instalar Node.js"
+  - checkout: self
+    displayName: "Checkout code"
 
-    # Verificar version
-    - script: |
-        node --version
-        npm --version
-        yarn --version
-      displayName: "Verificar versiones"
-      continueOnError: true
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '20.x'
+    displayName: "Install Node.js"
 
-    # Limpiar
-    - script: |
-        if exist node_modules rmdir /s /q node_modules
-        if exist dist rmdir /s /q dist
-      displayName: "Limpiar carpetas"
-      continueOnError: true
+  - script: |
+      node --version
+      npm --version
+      yarn --version
+    displayName: "Show versions"
 
-    # Instalar dependencias
-    - script: yarn install --frozen-lockfile
-      displayName: "Instalar dependencias"
+  - script: yarn install --frozen-lockfile
+    displayName: "Install dependencies"
 
-    # Compilar
-    - script: yarn build
-      displayName: "Compilar proyecto"
-      env:
-        CI: true
-        NODE_ENV: production
+  - script: yarn build
+    displayName: "Build"
+    env:
+      CI: true
+      NODE_ENV: production
 
-    # Diagnóstico
-    - script: |
-        echo --- DIAGNOSTICO ---
-        dir
-        if exist $(MY_OUTPUT_LOCATION) (
-          echo Contenido de dist:
-          dir $(MY_OUTPUT_LOCATION)
-        ) else (
-          echo ERROR: No existe la carpeta dist
-          exit /b 1
-        )
-      displayName: "Verificar build"
+  - script: dir dist
+    displayName: "Verify dist"
 
-    # Publicar artefactos
-    - task: PublishBuildArtifacts@1
-      inputs:
-        PathtoPublish: "$(MY_OUTPUT_LOCATION)"
-        ArtifactName: "dist"
-        publishLocation: "Container"
-      displayName: "Publicar artefactos"
-
-- stage: Deploy
-  displayName: "Deploy Stage"
-  dependsOn: Build
-  condition: succeeded()
-  jobs:
-  - job: DeployJob
-    displayName: "Desplegar a Static Web Apps"
-    steps:
-
-    # Descargar artefactos
-    - download: current
-      artifact: dist
-      displayName: "Descargar artefactos"
-
-    # Verificar descarga
-    - script: dir "$(Pipeline.Workspace)\dist"
-      displayName: "Verificar artefactos"
-
-    # Deploy
-    - task: AzureStaticWebApp@0
-      displayName: "Deploy to Azure Static Web App"
-      inputs:
-        app_location: "$(Pipeline.Workspace)/dist"
-        skip_app_build: true
-        azure_static_web_apps_api_token: "$(SWA_DEPLOYMENT_TOKEN)"
+  - task: AzureStaticWebApp@0
+    inputs:
+      app_location: '/'
+      output_location: 'dist'
+      azure_static_web_apps_api_token: $(SWA_DEPLOYMENT_TOKEN)
+      skip_app_build: true
+    displayName: "Deploy to SWA"
