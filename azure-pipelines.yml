@@ -25,7 +25,7 @@ stages:
         versionSpec: '20.x'
       displayName: "Instalar Node.js"
 
-    # Verificar versiones
+    # Verificar version
     - script: |
         node --version
         npm --version
