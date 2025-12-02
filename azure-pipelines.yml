@@ -7,11 +7,13 @@ pool:
     - agent.name -equals LAPTOP-GLDNITHE
 
 variables:
-  app_location: "/"
-  api_location: ""
-  output_location: "dist"
-  # Token guardado como variable secreta en Azure DevOps
-  swa_token: "$(STATIC_WEB_APPS_TOKEN)"
+- group: SWA-Deployment-Secrets
+- name: app_location
+  value: "/"
+- name: api_location
+  value: ""
+- name: output_location
+  value: "dist"
 
 stages:
 - stage: Build
@@ -41,8 +43,8 @@ stages:
 
     - task: PublishBuildArtifacts@1
       inputs:
-        PathtoPublish: "dist"
-        ArtifactName: "dist"
+        PathtoPublish: "$(output_location)"
+        ArtifactName: "$(output_location)"
         publishLocation: "Container"
       displayName: "Publicar artefactos"
 
@@ -56,7 +58,7 @@ stages:
     steps:
 
     - download: current
-      artifact: dist
+      artifact: "$(output_location)"
 
     - task: AzureStaticWebApp@0
       displayName: "Deploy to Azure Static Web App con Deployment Token"
