@@ -1,0 +1,10 @@
+// context/Invitados/ActionTypes.js
+export const GET_INVITACIONES = "GET_INVITACIONES";
+export const GET_INVITACIONES_USUARIO = "GET_INVITACIONES_USUARIO";
+export const CREAR_INVITACION = "CREAR_INVITACION";
+export const CANCELAR_INVITACION = "CANCELAR_INVITACION";
+export const PROCESAR_QR = "PROCESAR_QR";
+export const SET_LOADING = "SET_LOADING";
+export const SET_ERROR = "SET_ERROR";
+export const CLEAR_ERROR = "CLEAR_ERROR";
+export const SET_SCANNER_ACTIVE = "SET_SCANNER_ACTIVE";
