@@ -92,10 +92,10 @@ export const ReportesAPI = {
     // Normaliza por si luego quieres mostrar solo activos
     return Array.isArray(res)
       ? res.map((t) => ({
-          tipoReporteID: t.tipoReporteID,
-          nombre: t.nombre,
-          activo: t.activo !== false,
-        }))
+        tipoReporteID: t.tipoReporteID,
+        nombre: t.nombre,
+        activo: t.activo !== false,
+      }))
       : [];
   },
 

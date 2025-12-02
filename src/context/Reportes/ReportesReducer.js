@@ -1,4 +1,3 @@
-// src/context/Reportes/ReportesReducer.js
 import {
   GET_REPORTES_REQUEST,
   GET_REPORTES_SUCCESS,
@@ -12,7 +11,13 @@ import {
   CREATE_REPORTE_SUCCESS,
   CREATE_REPORTE_ERROR,
   MARCAR_VISTO_SUCCESS,
-  CAMBIAR_ANONIMATO_SUCCESS,
+  CREATE_AVISO_REQUEST,
+  CREATE_AVISO_SUCCESS,
+  CREATE_AVISO_ERROR,
+  GET_AVISOS_REQUEST,
+  GET_AVISOS_SUCCESS,
+  GET_AVISOS_ERROR,
+  GET_CATEGORIAS_AVISO_SUCCESS,
   CLEAR_ERROR,
 } from "./ActionsTypes";
 
@@ -21,6 +26,8 @@ export const initialState = {
   reportesUsuario: [],
   reporteActual: null,
   tiposReporte: [],
+  avisos: [],
+  categoriasAviso: [],
   loading: false,
   error: null,
 };
@@ -30,6 +37,8 @@ export default function ReportesReducer(state, action) {
     case GET_REPORTES_REQUEST:
     case GET_REPORTE_REQUEST:
     case CREATE_REPORTE_REQUEST:
+    case CREATE_AVISO_REQUEST:
+    case GET_AVISOS_REQUEST:
       return {
         ...state,
         loading: true,
@@ -67,7 +76,6 @@ export default function ReportesReducer(state, action) {
       return {
         ...state,
         loading: false,
-        // lo agregamos al inicio de la lista general
         reportes: [action.payload, ...state.reportes],
       };
 
@@ -79,32 +87,37 @@ export default function ReportesReducer(state, action) {
         ),
         reporteActual:
           state.reporteActual &&
-          state.reporteActual.reporteID === action.payload
+            state.reporteActual.reporteID === action.payload
             ? { ...state.reporteActual, visto: true }
             : state.reporteActual,
       };
 
-    case CAMBIAR_ANONIMATO_SUCCESS:
+    // NUEVOS CASOS PARA AVISOS
+    case CREATE_AVISO_SUCCESS:
       return {
         ...state,
-        reportes: state.reportes.map((r) =>
-          r.reporteID === action.payload.id
-            ? { ...r, esAnonimo: action.payload.esAnonimo }
-            : r
-        ),
-        reporteActual:
-          state.reporteActual &&
-          state.reporteActual.reporteID === action.payload.id
-            ? {
-                ...state.reporteActual,
-                esAnonimo: action.payload.esAnonimo,
-              }
-            : state.reporteActual,
+        loading: false,
+        avisos: [action.payload, ...state.avisos],
+      };
+
+    case GET_AVISOS_SUCCESS:
+      return {
+        ...state,
+        loading: false,
+        avisos: action.payload,
+      };
+
+    case GET_CATEGORIAS_AVISO_SUCCESS:
+      return {
+        ...state,
+        categoriasAviso: action.payload,
       };
 
     case GET_REPORTES_ERROR:
     case GET_REPORTE_ERROR:
     case CREATE_REPORTE_ERROR:
+    case CREATE_AVISO_ERROR:
+    case GET_AVISOS_ERROR:
       return {
         ...state,
         loading: false,

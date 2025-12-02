@@ -38,7 +38,6 @@ const ServiciosState = (props) => {
     try {
       setLoading(true);
       const res = await axios.get(`${API}/Servicios/personal-mantenimiento`);
-
       dispatch({
         type: GET_PERSONAL_MANTENIMIENTO,
         payload: res.data,

@@ -6,7 +6,6 @@ export default function Reportes() {
   return (
     <div className="p-4 md:p-6">
       {/* Breadcrumb principal de la sección */}
-      <div className="mb-5 text-sm text-slate-500 flex items-center gap-2"></div>
 
       {/* Título y subtítulo de la sección */}
       <div className="mb-6">

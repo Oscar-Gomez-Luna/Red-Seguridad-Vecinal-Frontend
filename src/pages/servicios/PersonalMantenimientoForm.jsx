@@ -7,7 +7,7 @@ export default function PersonalMantenimientoForm({
   onUpdate,
   initial,
   mode = "create",
-  onModificar
+  onModificar,
 }) {
   const [form, setForm] = useState({
     nombre: "",
@@ -78,16 +78,21 @@ export default function PersonalMantenimientoForm({
 
     if (currentMode === "create") {
       if (!form.nombre.trim()) e.nombre = "Nombre requerido";
-      if (!form.apellidoPaterno.trim()) e.apellidoPaterno = "Apellido paterno requerido";
+      if (!form.apellidoPaterno.trim())
+        e.apellidoPaterno = "Apellido paterno requerido";
       if (!form.telefono.trim()) e.telefono = "Teléfono requerido";
     }
 
     if (!form.puesto.trim()) e.puesto = "Puesto requerido";
-    if (!form.fechaContratacion) e.fechaContratacion = "Fecha de contratación requerida";
-    if (form.sueldo === "" || Number(form.sueldo) <= 0) e.sueldo = "Sueldo debe ser mayor a 0";
-    if (!form.tipoContrato.trim()) e.tipoContrato = "Tipo de contrato requerido";
+    if (!form.fechaContratacion)
+      e.fechaContratacion = "Fecha de contratación requerida";
+    if (form.sueldo === "" || Number(form.sueldo) <= 0)
+      e.sueldo = "Sueldo debe ser mayor a 0";
+    if (!form.tipoContrato.trim())
+      e.tipoContrato = "Tipo de contrato requerido";
     if (!form.turno.trim()) e.turno = "Turno requerido";
-    if (!form.diasLaborales.trim()) e.diasLaborales = "Días laborales requeridos";
+    if (!form.diasLaborales.trim())
+      e.diasLaborales = "Días laborales requeridos";
 
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -105,7 +110,7 @@ export default function PersonalMantenimientoForm({
       onClose();
       return;
     }
-    
+
     if (!validate()) return;
 
     setIsSubmitting(true);
@@ -148,7 +153,7 @@ export default function PersonalMantenimientoForm({
         };
         await onUpdate(initial.personalMantenimientoID, payload);
       }
-      
+
       onClose(); // Cambiar setFormOpen por onClose
     } catch (err) {
       console.error("Error al guardar:", err);
@@ -172,9 +177,11 @@ export default function PersonalMantenimientoForm({
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden">
         <div className="bg-emerald-600 text-white px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold">
-            {isViewMode ? "Detalles del Personal" : 
-             isEditMode ? "Editar Personal" : 
-             "Nuevo Personal de Mantenimiento"}
+            {isViewMode
+              ? "Detalles del Personal"
+              : isEditMode
+              ? "Editar Personal"
+              : "Nuevo Personal de Mantenimiento"}
           </h2>
           <button
             onClick={onClose}
@@ -185,7 +192,10 @@ export default function PersonalMantenimientoForm({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-6 py-4 max-h-[70vh] overflow-y-auto">
+        <form
+          onSubmit={handleSubmit}
+          className="px-6 py-4 max-h-[70vh] overflow-y-auto"
+        >
           {/* Campos de persona - solo en modo crear */}
           {currentMode === "create" && (
             <>
@@ -225,7 +235,9 @@ export default function PersonalMantenimientoForm({
                     placeholder="Ingresa el apellido paterno"
                   />
                   {errors.apellidoPaterno && (
-                    <p className="text-xs text-red-500 mt-1">{errors.apellidoPaterno}</p>
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.apellidoPaterno}
+                    </p>
                   )}
                 </div>
               </div>
@@ -263,7 +275,9 @@ export default function PersonalMantenimientoForm({
                     placeholder="Ingresa el teléfono"
                   />
                   {errors.telefono && (
-                    <p className="text-xs text-red-500 mt-1">{errors.telefono}</p>
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.telefono}
+                    </p>
                   )}
                 </div>
               </div>
@@ -343,7 +357,9 @@ export default function PersonalMantenimientoForm({
                     placeholder="Ingresa el apellido paterno"
                   />
                   {errors.apellidoPaterno && (
-                    <p className="text-xs text-red-500 mt-1">{errors.apellidoPaterno}</p>
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.apellidoPaterno}
+                    </p>
                   )}
                 </div>
               </div>
@@ -381,7 +397,9 @@ export default function PersonalMantenimientoForm({
                     placeholder="Ingresa el teléfono"
                   />
                   {errors.telefono && (
-                    <p className="text-xs text-red-500 mt-1">{errors.telefono}</p>
+                    <p className="text-xs text-red-500 mt-1">
+                      {errors.telefono}
+                    </p>
                   )}
                 </div>
               </div>
@@ -480,7 +498,9 @@ export default function PersonalMantenimientoForm({
                 }`}
               />
               {errors.fechaContratacion && (
-                <p className="text-xs text-red-500 mt-1">{errors.fechaContratacion}</p>
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.fechaContratacion}
+                </p>
               )}
             </div>
             <div>
@@ -502,7 +522,9 @@ export default function PersonalMantenimientoForm({
                 <option value="Por proyecto">Por proyecto</option>
               </select>
               {errors.tipoContrato && (
-                <p className="text-xs text-red-500 mt-1">{errors.tipoContrato}</p>
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.tipoContrato}
+                </p>
               )}
             </div>
           </div>
@@ -552,7 +574,9 @@ export default function PersonalMantenimientoForm({
                 <option value="Lunes-Domingo">Lunes a Domingo</option>
               </select>
               {errors.diasLaborales && (
-                <p className="text-xs text-red-500 mt-1">{errors.diasLaborales}</p>
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.diasLaborales}
+                </p>
               )}
             </div>
           </div>
@@ -589,7 +613,11 @@ export default function PersonalMantenimientoForm({
                 disabled={isSubmitting}
                 className="px-4 py-2.5 rounded-full bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-50"
               >
-                {isSubmitting ? "Guardando..." : (isEditMode ? "Guardar Cambios" : "Registrar Personal")}
+                {isSubmitting
+                  ? "Guardando..."
+                  : isEditMode
+                  ? "Guardar Cambios"
+                  : "Registrar Personal"}
               </button>
             )}
             {isViewMode && (
