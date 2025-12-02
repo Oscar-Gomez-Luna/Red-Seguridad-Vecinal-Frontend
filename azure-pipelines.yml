@@ -2,15 +2,12 @@ trigger:
 - master
 
 pool:
-  vmImage: 'ubuntu-latest'
+  name: AgenteLocal    # o el pool donde registraste el agente
+  demands: agent.name -equals LAPTOP-GLDNITHE   # opcional, pero recomendado
 
 variables:
-  # CAMBIA ESTO: Nombre de tu conexión en Azure DevOps
   azureSubscription: 'AzureConnection'
-  # CAMBIA ESTO: Nombre de tu App Service
   webAppName: 'lively-tree-00851061e.3'
-  # IMPORTANTE: Revisa si yarn build genera una carpeta 'build' o 'dist'
-  # Si usas Vite suele ser 'dist'. Si usas Create React App suele ser 'build'.
   buildOutputFolder: 'build'
 
 stages:
@@ -20,18 +17,16 @@ stages:
   - job: BuildJob
     displayName: 'Compilar con Yarn'
     steps:
+
     - task: NodeTool@0
       inputs:
         versionSpec: '20.x'
       displayName: 'Instalar Node.js'
 
-    # PASO CLAVE MODIFICADO PARA YARN
     - script: |
         yarn install --frozen-lockfile
         yarn build
       displayName: 'Yarn Install y Build'
-      # '--frozen-lockfile' es vital: asegura que se usen las versiones EXACTAS de tu yarn.lock
-      # Si este paso falla, significa que tu yarn.lock local no coincide con package.json.
 
     - task: ArchiveFiles@2
       displayName: 'Comprimir archivos de compilación'
@@ -68,5 +63,4 @@ stages:
               appType: 'webAppLinux'
               appName: $(webAppName)
               package: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
-              # Este comando usa PM2 para servir la carpeta estática generada por Yarn
               startUpCommand: 'pm2 serve /home/site/wwwroot --no-daemon --spa'
