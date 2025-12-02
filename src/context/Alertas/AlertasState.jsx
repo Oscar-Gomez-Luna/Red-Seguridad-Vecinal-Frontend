@@ -47,7 +47,6 @@ const AlertasState = (props) => {
     }
   };
 
-  // OBTENER DETALLE DE UNA ALERTA
   const getAlertaDetalle = async (id) => {
     dispatch({ type: "LOADING" });
 
