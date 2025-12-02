@@ -27,8 +27,8 @@ stages:
 
     # 1. Instalación y Build (Yarn ejecuta vite build)
     - script: |
-        yarn install --frozen-lockfile
         yarn build
+        yarn install --frozen-lockfile
       displayName: 'Yarn Install y Build'
 
     # 2. Diagnóstico final (solo si falla, para ver la carpeta dist)
