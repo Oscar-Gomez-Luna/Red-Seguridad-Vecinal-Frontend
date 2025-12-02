@@ -175,7 +175,7 @@ jobs:
           NODE_ENV: production
           PUBLIC_URL: "/"
           CI: false
-          GENERATE_SOURCEMAP: false # Reduce tamaño de archivos
+          GENERATE_SOURCEMAP: false # Reduce tamaño de
 
       - name: Clean up build directory
         run: |
