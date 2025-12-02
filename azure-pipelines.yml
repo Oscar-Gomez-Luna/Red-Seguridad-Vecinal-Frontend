@@ -26,16 +26,16 @@ stages:
         versionSpec: '20.x'
       displayName: "Instalar Node.js"
 
-    - script: yarn install --frozen-lockfile
+    - powershell: yarn install --frozen-lockfile
       displayName: "Instalar dependencias"
 
-    - script: yarn build
+    - powershell: yarn build
       displayName: "Compilar proyecto"
 
-    - script: |
-        echo "--- DIAGNOSTICO ---"
-        dir
-        dir $(output_location)
+    - powershell: |
+        Write-Host "--- DIAGNOSTICO ---"
+        Get-ChildItem
+        Get-ChildItem $(output_location)
       displayName: "Diagnóstico de carpeta dist"
       continueOnError: true
 
