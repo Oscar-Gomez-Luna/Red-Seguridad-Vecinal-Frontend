@@ -36,7 +36,7 @@ jobs:
       - name: Running Unit Tests
         run: |
           echo "=================================="
-          echo "UNIT TESTS SUITE"
+          echo " UNIT TESTS SUITE"
           echo "=================================="
           sleep 1
           echo "✓ App.test.js - renders without crashing (125ms)"
@@ -57,7 +57,7 @@ jobs:
         run: |
           echo ""
           echo "=================================="
-          echo "INTEGRATION TESTS"
+          echo " INTEGRATION TESTS"
           echo "=================================="
           sleep 1
           echo "✓ User flow - login to dashboard (234ms)"
@@ -89,14 +89,14 @@ jobs:
           echo "  Header.js       |   95.4  |   92.1   |   100   |   94.8"
           echo "  Footer.js       |   81.2  |   78.0   |   83.1  |   81.0"
           echo ""
-          echo "Coverage threshold met: 85%"
+          echo " Coverage threshold met: 85%"
           echo "=================================="
 
       - name: Running Security Tests
         run: |
           echo ""
           echo "=================================="
-          echo "SECURITY AUDIT"
+          echo " SECURITY AUDIT"
           echo "=================================="
           sleep 1
           echo "Scanning dependencies for vulnerabilities..."
@@ -106,7 +106,7 @@ jobs:
           echo "⚠ 2 moderate vulnerabilities found (non-blocking)"
           echo "✓ Package signatures verified"
           echo ""
-          echo "Security Status: PASSED "
+          echo "Security Status: PASSED"
           echo "=================================="
 
       - name: Running Performance Tests
@@ -215,8 +215,8 @@ jobs:
 
       - name: Deployment summary
         run: |
-          echo "Deployment completed successfully!"
-          echo "URL: ${{ steps.deploy.outputs.static_web_app_url }}"
+          echo " Deployment completed successfully!"
+          echo " URL: ${{ steps.deploy.outputs.static_web_app_url }}"
 
   # ========================================
   # JOB: CLOSE PULL REQUEST
