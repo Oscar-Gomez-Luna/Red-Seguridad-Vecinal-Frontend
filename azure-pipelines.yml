@@ -11,7 +11,7 @@ variables:
   # Verifica en Azure que este sea el nombre EXACTO (sin espacios ni .3 al final)
   webAppName: 'lively-tree-00851061e'
   # CORRECCIÓN PRINCIPAL: Cambiado de 'dist' a 'build' (estándar en React)
-  buildOutputFolder: 'build'
+  buildOutputFolder: 'dist'
 
 stages:
 - stage: Build
