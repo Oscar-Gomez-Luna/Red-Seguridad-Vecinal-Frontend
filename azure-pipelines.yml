@@ -1,52 +1,127 @@
 trigger:
-- master
+  - master
 
 pool:
-  name: 'AgenteLocal'
+  name: "AgenteLocal"
   demands:
     - agent.name -equals LAPTOP-GLDNITHE
 
 variables:
-- group: SWA-Deployment-Secrets
+  - group: SWA-Deployment-Secrets
 
-jobs:
-- job: BuildAndDeploy
-  displayName: "Build and Deploy"
-  steps:
+stages:
+  - stage: Test
+    displayName: "Test Stage"
+    jobs:
+      - job: RunTests
+        displayName: "Run Tests"
+        steps:
+          - checkout: self
 
-  - checkout: self
-    displayName: "Checkout code"
+          - task: NodeTool@0
+            inputs:
+              versionSpec: "20.x"
+            displayName: "Install Node.js"
 
-  - task: NodeTool@0
-    inputs:
-      versionSpec: '20.x'
-    displayName: "Install Node.js"
+          - script: npm install
+            displayName: "Install dependencies"
+            env:
+              CI: true
 
-  - powershell: |
-      node --version
-      npm --version
-      Get-ChildItem package*.json -ErrorAction SilentlyContinue
-    displayName: "Show versions and check package files"
+          - script: npm run lint
+            displayName: "Run Linter"
+            continueOnError: true
 
-  - script: npm install
-    displayName: "Install dependencies"
-    env:
-      CI: true
+          - script: npm test -- --run
+            displayName: "Run Unit Tests"
+            continueOnError: true
 
-  - script: npm run build
-    displayName: "Build"
-    env:
-      CI: true
-      NODE_ENV: production
+          - script: npm run test:coverage
+            displayName: "Generate Coverage Report"
+            continueOnError: true
 
-  - powershell: |
-      Get-ChildItem dist -Recurse -ErrorAction SilentlyContinue | Select-Object -First 10 Name
-    displayName: "Verify dist content"
+          - task: PublishTestResults@2
+            condition: succeededOrFailed()
+            inputs:
+              testResultsFormat: "JUnit"
+              testResultsFiles: "**/test-results.xml"
+              failTaskOnFailedTests: false
+            displayName: "Publish Test Results"
 
-  - task: AzureStaticWebApp@0
-    inputs:
-      app_location: '/'
-      output_location: 'dist'
-      azure_static_web_apps_api_token: $(SWA_DEPLOYMENT_TOKEN)
-      skip_app_build: true
-    displayName: "Deploy to SWA"
+          - task: PublishCodeCoverageResults@2
+            condition: succeededOrFailed()
+            inputs:
+              summaryFileLocation: "**/coverage/cobertura-coverage.xml"
+              pathToSources: "src"
+            displayName: "Publish Coverage Results"
+
+  - stage: Build
+    displayName: "Build Stage"
+    dependsOn: Test
+    condition: succeeded()
+    jobs:
+      - job: BuildApp
+        displayName: "Build Application"
+        steps:
+          - checkout: self
+
+          - task: NodeTool@0
+            inputs:
+              versionSpec: "20.x"
+            displayName: "Install Node.js"
+
+          - powershell: |
+              node --version
+              npm --version
+              Get-ChildItem package*.json -ErrorAction SilentlyContinue
+            displayName: "Verify environment"
+
+          - script: npm install
+            displayName: "Install dependencies"
+            env:
+              CI: true
+
+          - script: npm run build
+            displayName: "Build application"
+            env:
+              CI: true
+              NODE_ENV: production
+
+          - powershell: |
+              Get-ChildItem dist -Recurse -ErrorAction SilentlyContinue | Select-Object -First 10 Name
+            displayName: "Verify build output"
+
+          - task: PublishPipelineArtifact@1
+            inputs:
+              targetPath: "dist"
+              artifact: "build-output"
+              publishLocation: "pipeline"
+            displayName: "Publish build artifact"
+
+  - stage: Deploy
+    displayName: "Deploy Stage"
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+      - deployment: DeployToAzure
+        displayName: "Deploy to Azure SWA"
+        environment: "production"
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+
+                - task: DownloadPipelineArtifact@2
+                  inputs:
+                    artifact: "build-output"
+                    path: "dist"
+                  displayName: "Download build artifact"
+
+                - task: AzureStaticWebApp@0
+                  inputs:
+                    app_location: "/"
+                    output_location: "dist"
+                    azure_static_web_apps_api_token: $(SWA_DEPLOYMENT_TOKEN)
+                    skip_app_build: true
+                  displayName: "Deploy to Azure Static Web Apps"
