@@ -2,80 +2,66 @@ trigger:
 - master
 
 pool:
-  # Se utiliza 'Default' si no creaste un Pool con otro nombre.
-  name: 'AgenteLocal' 
+  name: 'AgenteLocal'
   demands:
-   - agent.name -equals LAPTOP-GLDNITHE
+    - agent.name -equals LAPTOP-GLDNITHE
 
 variables:
-  azureSubscription: 'AzureConnection'
-  webAppName: 'red-seguridad-vecinal-app' 
-  # CORRECCIÓN VITAL: Vite build genera 'dist'
-  buildOutputFolder: 'dist' 
+  app_location: "/"
+  api_location: ""
+  output_location: "dist"
+  # Token guardado como variable secreta en Azure DevOps
+  swa_token: "$(STATIC_WEB_APPS_TOKEN)"
 
 stages:
 - stage: Build
-  displayName: 'Build Stage'
+  displayName: "Build Stage"
   jobs:
   - job: BuildJob
-    displayName: 'Compilar con Yarn y Vite'
+    displayName: "Compilar con Yarn y Vite"
     steps:
+
     - task: NodeTool@0
       inputs:
         versionSpec: '20.x'
-      displayName: 'Instalar Node.js'
+      displayName: "Instalar Node.js"
 
-    # 1. Instalación y Build (Yarn ejecuta vite build)
     - script: yarn install --frozen-lockfile
-      displayName: 'Instalar Dependencias'
+      displayName: "Instalar dependencias"
 
     - script: yarn build
-      displayName: 'Compilar Proyecto'
+      displayName: "Compilar proyecto"
 
-    # 2. Diagnóstico final (solo si falla, para ver la carpeta dist)
     - script: |
-        echo "--- DIAGNOSTICO DE CARPETAS ---"
-        echo "Buscando carpeta de salida: $(buildOutputFolder)"
-        if exist $(buildOutputFolder) ( echo "CARPETA $(buildOutputFolder) ENCONTRADA" ) else ( echo "ERROR: NO SE ENCONTRO CARPETA DE SALIDA" )
+        echo "--- DIAGNOSTICO ---"
         dir
-      displayName: 'Verificar carpeta dist'
-      continueOnError: true # Permite que el pipeline intente archivar aunque la carpeta no exista (para diagnosticar)
-
-    # 3. Empaquetado
-    - task: ArchiveFiles@2
-      displayName: 'Comprimir artefactos (dist)'
-      inputs:
-        # Se asegura de usar 'dist'
-        rootFolderOrFile: '$(System.DefaultWorkingDirectory)/$(buildOutputFolder)'
-        includeRootFolder: false
-        archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
-        replaceExistingArchive: true
+        dir dist
+      displayName: "Diagnóstico de carpeta dist"
+      continueOnError: true
 
     - task: PublishBuildArtifacts@1
-      displayName: 'Publicar Artefacto'
       inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-        ArtifactName: 'drop'
-        publishLocation: 'Container'
+        PathtoPublish: "dist"
+        ArtifactName: "dist"
+        publishLocation: "Container"
+      displayName: "Publicar artefactos"
 
 - stage: Deploy
-  displayName: 'Deploy Stage'
+  displayName: "Deploy Stage"
   dependsOn: Build
   condition: succeeded()
   jobs:
-  - deployment: DeployJob
-    displayName: 'Desplegar a App Service'
-    environment: 'production'
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - task: AzureWebApp@1
-            displayName: 'Azure Web App Deploy'
-            inputs:
-              azureSubscription: $(azureSubscription)
-              appType: 'webAppLinux'
-              appName: $(webAppName)
-              package: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
-              startUpCommand: 'pm2 serve /home/site/wwwroot --no-daemon --spa'
+  - job: DeployJob
+    displayName: "Desplegar a Static Web Apps"
+    steps:
+
+    - download: current
+      artifact: dist
+
+    - task: AzureStaticWebApp@0
+      displayName: "Deploy to Azure Static Web App con Deployment Token"
+      inputs:
+        app_location: "$(app_location)"
+        api_location: "$(api_location)"
+        output_location: "$(output_location)"
+        azure_static_web_apps_api_token: "$(swa_token)"
