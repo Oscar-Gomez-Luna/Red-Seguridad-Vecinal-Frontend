@@ -56,7 +56,7 @@ stages:
     steps:
 
     - download: current
-      artifact: dist   # Nombre literal del artefacto publicado
+      artifact: dist
 
     - task: AzureStaticWebApp@0
       displayName: "Deploy to Azure Static Web App con Deployment Token"
