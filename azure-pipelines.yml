@@ -59,7 +59,7 @@ stages:
       artifact: dist
 
     - task: AzureStaticWebApp@0
-      displayName: "Deploy to Azure Static Web App con Deployment Token"
+      displayName: "Deploy to Azure Static Web App"
       inputs:
         app_location: "$(MY_APP_LOCATION)"
         output_location: "$(MY_OUTPUT_LOCATION)"
