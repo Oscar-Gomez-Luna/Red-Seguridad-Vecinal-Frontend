@@ -2,74 +2,51 @@ trigger:
 - master
 
 pool:
-  name: AgenteLocal
-  demands: agent.name -equals LAPTOP-GLDNITHE
+  name: 'AgenteLocal'
+  demands:
+    - agent.name -equals LAPTOP-GLDNITHE
 
 variables:
-  azureSubscription: 'AzureConnection'
-  webAppName: 'lively-tree-00851061e.3'
-  buildOutputFolder: 'build'
+- group: SWA-Deployment-Secrets
 
-stages:
-- stage: Build
-  displayName: 'Build Stage'
-  jobs:
-  - job: BuildJob
-    displayName: 'Compilar con Yarn'
-    steps:
+jobs:
+- job: BuildAndDeploy
+  displayName: "Build and Deploy"
+  steps:
 
-    # Instala Node.js 20 en el agente
-    - task: NodeTool@0
-      inputs:
-        versionSpec: '20.x'
-      displayName: 'Instalar Node.js'
+  - checkout: self
+    displayName: "Checkout code"
 
-    # Instalar Yarn en el agente (no importa si no estaba instalado globalmente)
-    - script: |
-        npm install -g yarn
-      displayName: 'Instalar Yarn global'
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '20.x'
+    displayName: "Install Node.js"
 
-    # Instalar dependencias y compilar
-    - script: |
-        yarn install --frozen-lockfile
-        yarn build
-      displayName: 'Yarn Install y Build'
+  - powershell: |
+      node --version
+      npm --version
+      Get-ChildItem package*.json -ErrorAction SilentlyContinue
+    displayName: "Show versions and check package files"
 
-    # Comprimir build
-    - task: ArchiveFiles@2
-      displayName: 'Comprimir archivos de compilación'
-      inputs:
-        rootFolderOrFile: '$(System.DefaultWorkingDirectory)/$(buildOutputFolder)'
-        includeRootFolder: false
-        archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
-        replaceExistingArchive: true
+  - script: npm install
+    displayName: "Install dependencies"
+    env:
+      CI: true
 
-    # Publicar artefactos
-    - task: PublishBuildArtifacts@1
-      displayName: 'Publicar Artefacto'
-      inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-        ArtifactName: 'drop'
-        publishLocation: 'Container'
+  - script: npm run build
+    displayName: "Build"
+    env:
+      CI: true
+      NODE_ENV: production
 
-- stage: Deploy
-  displayName: 'Deploy Stage'
-  dependsOn: Build
-  condition: succeeded()
-  jobs:
-  - deployment: DeployJob
-    displayName: 'Desplegar a App Service'
-    environment: 'production'
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - task: AzureWebApp@1
-            displayName: 'Azure Web App Deploy'
-            inputs:
-              azureSubscription: $(azureSubscription)
-              appType: 'webAppLinux'
-              appName: $(webAppName)
-              package: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
-              startUpCommand: 'pm2 serve /home/site/wwwroot --no-daemon --spa'
+  - powershell: |
+      Get-ChildItem dist -Recurse -ErrorAction SilentlyContinue | Select-Object -First 10 Name
+    displayName: "Verify dist content"
+
+  - task: AzureStaticWebApp@0
+    inputs:
+      app_location: '/'
+      output_location: 'dist'
+      azure_static_web_apps_api_token: $(SWA_DEPLOYMENT_TOKEN)
+      skip_app_build: true
+    displayName: "Deploy to SWA"
