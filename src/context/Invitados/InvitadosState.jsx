@@ -24,7 +24,7 @@ const initialState = {
   error: null,
 };
 
-const API = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5165/api";
+const API = import.meta.env.VITE_API_BASE_URL;
 
 const InvitadosState = (props) => {
   const [state, dispatch] = useReducer(InvitadosReducer, initialState);
@@ -32,13 +32,14 @@ const InvitadosState = (props) => {
   const setLoading = (value) => dispatch({ type: SET_LOADING, payload: value });
   const setError = (error) => dispatch({ type: SET_ERROR, payload: error });
   const clearError = () => dispatch({ type: CLEAR_ERROR });
-  const setScannerActive = (active) => dispatch({ type: SET_SCANNER_ACTIVE, payload: active });
+  const setScannerActive = (active) =>
+    dispatch({ type: SET_SCANNER_ACTIVE, payload: active });
 
   const getInvitaciones = async () => {
     try {
       setLoading(true);
       const res = await axios.get(`${API}/Invitados`);
-      
+
       dispatch({
         type: GET_INVITACIONES,
         payload: res.data,
@@ -56,7 +57,7 @@ const InvitadosState = (props) => {
     try {
       setLoading(true);
       const res = await axios.get(`${API}/Invitados/usuario/${usuarioId}`);
-      
+
       dispatch({
         type: GET_INVITACIONES_USUARIO,
         payload: res.data,
@@ -74,7 +75,7 @@ const InvitadosState = (props) => {
     try {
       setLoading(true);
       const res = await axios.post(`${API}/Invitados`, invitacionData);
-      
+
       dispatch({
         type: CREAR_INVITACION,
         payload: res.data,
@@ -92,7 +93,7 @@ const InvitadosState = (props) => {
     try {
       setLoading(true);
       await axios.put(`${API}/Invitados/${invitadoID}/cancelar`);
-      
+
       dispatch({
         type: CANCELAR_INVITACION,
         payload: invitadoID,
@@ -110,12 +111,12 @@ const InvitadosState = (props) => {
     try {
       setLoading(true);
       const res = await axios.get(`${API}/accesos/validar/${qrCode}`);
-      
+
       const resultado = {
         timestamp: new Date().toLocaleTimeString(),
         qrCode: qrCode,
         resultado: res.data,
-        success: true
+        success: true,
       };
 
       dispatch({
@@ -124,16 +125,16 @@ const InvitadosState = (props) => {
       });
 
       await getInvitaciones();
-      
+
       return resultado;
     } catch (error) {
       console.error("Error procesando QR:", error);
-      
+
       const resultado = {
         timestamp: new Date().toLocaleTimeString(),
         qrCode: qrCode,
         error: error.response?.data?.message || error.message,
-        success: false
+        success: false,
       };
 
       dispatch({
@@ -147,29 +148,30 @@ const InvitadosState = (props) => {
 
   const generarQRImage = (codigoQR, size = 80) => {
     if (!codigoQR) return null;
-    return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(codigoQR)}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(
+      codigoQR
+    )}`;
   };
 
-  const descargarQR = async (codigoQR, nombreArchivo = 'qr_invitado') => {
+  const descargarQR = async (codigoQR, nombreArchivo = "qr_invitado") => {
     if (!codigoQR) return;
-    
+
     try {
       const qrImageUrl = generarQRImage(codigoQR, 300);
       const response = await fetch(qrImageUrl);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      
-      const link = document.createElement('a');
+
+      const link = document.createElement("a");
       link.href = url;
       link.download = `${nombreArchivo}_${codigoQR}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      
     } catch (error) {
-      console.error('Error al descargar QR:', error);
-      setError('No se pudo descargar el QR');
+      console.error("Error al descargar QR:", error);
+      setError("No se pudo descargar el QR");
     }
   };
 

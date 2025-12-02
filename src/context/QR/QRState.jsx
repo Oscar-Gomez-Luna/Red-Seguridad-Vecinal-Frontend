@@ -19,7 +19,7 @@ const initialState = {
   error: null,
 };
 
-const API = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5165/api";
+const API = import.meta.env.VITE_API_BASE_URL;
 
 const QRState = (props) => {
   const [state, dispatch] = useReducer(QRReducer, initialState);
@@ -31,47 +31,49 @@ const QRState = (props) => {
   // 🔥 NUEVA FUNCIÓN: Obtener imagen del QR
   const getQRImage = (codigoQR, size = 120) => {
     if (!codigoQR) return null;
-    
-    return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(codigoQR)}`;
+
+    return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(
+      codigoQR
+    )}`;
   };
 
-    const setScannerActive = (active) => {
+  const setScannerActive = (active) => {
     dispatch({ type: SET_SCANNER_ACTIVE, payload: active });
   };
 
-  const descargarQR = async (codigoQR, nombreArchivo = 'qr_personal') => {
+  const descargarQR = async (codigoQR, nombreArchivo = "qr_personal") => {
     if (!codigoQR) return;
-    
+
     try {
       const qrImageUrl = getQRImage(codigoQR, 300);
       const response = await fetch(qrImageUrl);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      
-      const link = document.createElement('a');
+
+      const link = document.createElement("a");
       link.href = url;
       link.download = `${nombreArchivo}_${codigoQR}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      
     } catch (error) {
-      console.error('Error al descargar QR:', error);
-      setError('No se pudo descargar el QR');
+      console.error("Error al descargar QR:", error);
+      setError("No se pudo descargar el QR");
     }
   };
 
   const getQRPersonales = async () => {
     try {
       setLoading(true);
-      
+
       const usuariosRes = await axios.get(`${API}/Usuarios`);
       const usuarios = usuariosRes.data;
 
-      const qrPromises = usuarios.map(usuario =>
-        axios.get(`${API}/QRPersonal/usuario/${usuario.usuarioID}`)
-          .then(res => res.data)
+      const qrPromises = usuarios.map((usuario) =>
+        axios
+          .get(`${API}/QRPersonal/usuario/${usuario.usuarioID}`)
+          .then((res) => res.data)
           .catch(() => null)
       );
 
@@ -99,7 +101,7 @@ const QRState = (props) => {
     try {
       setLoading(true);
       const res = await axios.post(`${API}/QRPersonal/generar`, { usuarioID });
-      
+
       dispatch({
         type: GENERAR_QR,
         payload: res.data,
@@ -119,7 +121,7 @@ const QRState = (props) => {
     try {
       setLoading(true);
       await axios.put(`${API}/QRPersonal/${qrid}/estado`, { activo });
-      
+
       dispatch({
         type: UPDATE_ESTADO_QR,
         payload: { qrid, activo },

@@ -4,8 +4,7 @@ import PerfilContext from "./PerfilContext";
 import PerfilReducer from "./PerfilReducer";
 import { PERFIL_ACTIONS } from "./ActionsTypes";
 
-const API_URL =
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5165/api";
+const API_URL = import.meta.env.VITE_API_BASE_URL;
 
 const PerfilState = ({ children }) => {
   const initialState = {

@@ -22,7 +22,7 @@ const initialState = {
   error: null,
 };
 
-const API = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5165/api";
+const API = import.meta.env.VITE_API_BASE_URL;
 
 // Provider
 const MapaState = (props) => {

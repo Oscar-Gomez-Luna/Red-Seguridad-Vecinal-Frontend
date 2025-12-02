@@ -5,8 +5,7 @@ import EstadisticasContext from "./EstadisticasContext";
 import EstadisticasReducer from "./EstadisticasReducer";
 import { ESTADISTICAS_ACTIONS } from "./ActionsTypes";
 
-const API_URL =
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5165/api";
+const API_URL = import.meta.env.VITE_API_BASE_URL;
 
 const EstadisticasState = ({ children }) => {
   const initialState = {
