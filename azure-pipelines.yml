@@ -8,9 +8,9 @@ pool:
 
 variables:
 - group: SWA-Deployment-Secrets
-- name: app_location
+- name: MY_APP_LOCATION
   value: "/"
-- name: output_location
+- name: MY_OUTPUT_LOCATION
   value: "dist"
 
 stages:
@@ -35,14 +35,14 @@ stages:
     - powershell: |
         Write-Host "--- DIAGNOSTICO ---"
         Get-ChildItem
-        Get-ChildItem $(output_location)
+        Get-ChildItem "$(MY_OUTPUT_LOCATION)"
       displayName: "Diagnóstico de carpeta dist"
       continueOnError: true
 
     - task: PublishBuildArtifacts@1
       inputs:
-        PathtoPublish: "$(output_location)"
-        ArtifactName: "dist"   # Nombre literal
+        PathtoPublish: "$(MY_OUTPUT_LOCATION)"
+        ArtifactName: "dist"
         publishLocation: "Container"
       displayName: "Publicar artefactos"
 
@@ -61,6 +61,6 @@ stages:
     - task: AzureStaticWebApp@0
       displayName: "Deploy to Azure Static Web App con Deployment Token"
       inputs:
-        app_location: "$(app_location)"
-        output_location: "$(output_location)"
+        app_location: "$(MY_APP_LOCATION)"
+        output_location: "$(MY_OUTPUT_LOCATION)"
         azure_static_web_apps_api_token: "$(SWA_DEPLOYMENT_TOKEN)"
