@@ -10,8 +10,6 @@ variables:
 - group: SWA-Deployment-Secrets
 - name: app_location
   value: "/"
-- name: api_location
-  value: ""
 - name: output_location
   value: "dist"
 
@@ -37,14 +35,14 @@ stages:
     - script: |
         echo "--- DIAGNOSTICO ---"
         dir
-        dir dist
+        dir $(output_location)
       displayName: "Diagnóstico de carpeta dist"
       continueOnError: true
 
     - task: PublishBuildArtifacts@1
       inputs:
         PathtoPublish: "$(output_location)"
-        ArtifactName: "$(output_location)"
+        ArtifactName: "dist"   # Nombre literal del artefacto
         publishLocation: "Container"
       displayName: "Publicar artefactos"
 
@@ -58,12 +56,11 @@ stages:
     steps:
 
     - download: current
-      artifact: "$(output_location)"
+      artifact: dist   # Nombre literal del artefacto publicado
 
     - task: AzureStaticWebApp@0
       displayName: "Deploy to Azure Static Web App con Deployment Token"
       inputs:
         app_location: "$(app_location)"
-        api_location: "$(api_location)"
         output_location: "$(output_location)"
-        azure_static_web_apps_api_token: "$(swa_token)"
+        azure_static_web_apps_api_token: "$(SWA_DEPLOYMENT_TOKEN)"
