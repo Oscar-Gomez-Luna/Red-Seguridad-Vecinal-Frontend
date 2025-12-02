@@ -2,8 +2,8 @@ trigger:
 - master
 
 pool:
-  name: AgenteLocal    # o el pool donde registraste el agente
-  demands: agent.name -equals LAPTOP-GLDNITHE   # opcional, pero recomendado
+  name: AgenteLocal
+  demands: agent.name -equals LAPTOP-GLDNITHE
 
 variables:
   azureSubscription: 'AzureConnection'
@@ -18,16 +18,24 @@ stages:
     displayName: 'Compilar con Yarn'
     steps:
 
+    # Instala Node.js 20 en el agente
     - task: NodeTool@0
       inputs:
         versionSpec: '20.x'
       displayName: 'Instalar Node.js'
 
+    # Instalar Yarn en el agente (no importa si no estaba instalado globalmente)
+    - script: |
+        npm install -g yarn
+      displayName: 'Instalar Yarn global'
+
+    # Instalar dependencias y compilar
     - script: |
         yarn install --frozen-lockfile
         yarn build
       displayName: 'Yarn Install y Build'
 
+    # Comprimir build
     - task: ArchiveFiles@2
       displayName: 'Comprimir archivos de compilación'
       inputs:
@@ -37,6 +45,7 @@ stages:
         archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
         replaceExistingArchive: true
 
+    # Publicar artefactos
     - task: PublishBuildArtifacts@1
       displayName: 'Publicar Artefacto'
       inputs:
