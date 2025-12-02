@@ -2,51 +2,49 @@ trigger:
 - master
 
 pool:
-  name: 'AgenteLocal'
+  # Se utiliza 'Default' si no creaste un Pool con otro nombre.
+  name: 'AgenteLocal' 
   demands:
    - agent.name -equals LAPTOP-GLDNITHE
 
 variables:
   azureSubscription: 'AzureConnection'
-  # Verifica en Azure que este sea el nombre EXACTO (sin espacios ni .3 al final)
-  webAppName: 'lively-tree-00851061e'
-  # CORRECCIÓN PRINCIPAL: Cambiado de 'dist' a 'build' (estándar en React)
-  buildOutputFolder: 'dist'
+  webAppName: 'lively-tree-00851061e' 
+  # CORRECCIÓN VITAL: Vite build genera 'dist'
+  buildOutputFolder: 'dist' 
 
 stages:
 - stage: Build
   displayName: 'Build Stage'
   jobs:
   - job: BuildJob
-    displayName: 'Compilar con Yarn'
+    displayName: 'Compilar con Yarn y Vite'
     steps:
     - task: NodeTool@0
       inputs:
         versionSpec: '20.x'
       displayName: 'Instalar Node.js'
 
+    # 1. Instalación y Build (Yarn ejecuta vite build)
     - script: |
         yarn install --frozen-lockfile
         yarn build
       displayName: 'Yarn Install y Build'
 
-    # CORRECCIÓN: Diagnóstico seguro (no falla si la carpeta no existe)
+    # 2. Diagnóstico final (solo si falla, para ver la carpeta dist)
     - script: |
         echo "--- DIAGNOSTICO DE CARPETAS ---"
-        echo "Contenido de la raíz:"
+        echo "Buscando carpeta de salida: $(buildOutputFolder)"
+        if exist $(buildOutputFolder) ( echo "CARPETA $(buildOutputFolder) ENCONTRADA" ) else ( echo "ERROR: NO SE ENCONTRO CARPETA DE SALIDA" )
         dir
-        echo "-----------------------------"
-        echo "Buscando carpeta build:"
-        if exist build ( echo "CARPETA BUILD ENCONTRADA" ) else ( echo "NO SE ENCONTRO BUILD" )
-        echo "Buscando carpeta dist:"
-        if exist dist ( echo "CARPETA DIST ENCONTRADA" ) else ( echo "NO SE ENCONTRO DIST" )
-      displayName: 'Verificar carpetas generadas'
-      continueOnError: true
+      displayName: 'Verificar carpeta dist'
+      continueOnError: true # Permite que el pipeline intente archivar aunque la carpeta no exista (para diagnosticar)
 
+    # 3. Empaquetado
     - task: ArchiveFiles@2
-      displayName: 'Comprimir archivos de compilación'
+      displayName: 'Comprimir artefactos (dist)'
       inputs:
-        # Usamos la variable 'build' definida arriba
+        # Se asegura de usar 'dist'
         rootFolderOrFile: '$(System.DefaultWorkingDirectory)/$(buildOutputFolder)'
         includeRootFolder: false
         archiveType: 'zip'
