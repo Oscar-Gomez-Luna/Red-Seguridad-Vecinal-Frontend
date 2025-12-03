@@ -1,5 +1,6 @@
 import { useContext, useEffect, useMemo, useState } from "react";
 import InvitadosContext from "@/context/Invitados/InvitadosContext";
+import Swal from "sweetalert2";
 
 export default function InvitadosList() {
   const {
@@ -35,36 +36,73 @@ export default function InvitadosList() {
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return invitaciones;
-    
+
     return invitaciones.filter((inv) => {
-      const fullName = `${inv.nombreInvitado} ${inv.apellidoPaternoInvitado} ${inv.apellidoMaternoInvitado}`.toLowerCase();
+      const fullName =
+        `${inv.nombreInvitado} ${inv.apellidoPaternoInvitado} ${inv.apellidoMaternoInvitado}`.toLowerCase();
       const residente = (inv.nombreResidente || "").toLowerCase();
       const casa = (inv.numeroCasa || "").toLowerCase();
       const codigo = (inv.codigoQR || "").toLowerCase();
       const estado = (inv.estado || "").toLowerCase();
-      
-      return fullName.includes(q) || residente.includes(q) || 
-             casa.includes(q) || codigo.includes(q) || estado.includes(q);
+
+      return (
+        fullName.includes(q) ||
+        residente.includes(q) ||
+        casa.includes(q) ||
+        codigo.includes(q) ||
+        estado.includes(q)
+      );
     });
   }, [search, invitaciones]);
 
-  const simularLecturaQR = () => {
-    const qrCode = prompt("Ingresa el código QR para escaneo:");
+  // 🔵 Reemplaza prompt() con SweetAlert2
+  const simularLecturaQR = async () => {
+    const { value: qrCode } = await Swal.fire({
+      title: "Lectura manual",
+      input: "text",
+      inputLabel: "Ingresa el código QR",
+      inputPlaceholder: "Ejemplo: ABC123XY",
+      showCancelButton: true,
+      confirmButtonText: "Procesar",
+      cancelButtonText: "Cancelar",
+    });
+
     if (qrCode && qrCode.trim()) {
       procesarQRCode(qrCode.trim());
     }
   };
 
-  const iniciarEscaneoReal = () => {
+  // 🔵 Reemplaza alert() con SweetAlert2
+  const iniciarEscaneoReal = async () => {
     setScannerActive(true);
-    
-    alert(`Configura Barcode to PC:\n\nURL: http://localhost:5165/api/accesos/validar/{CODE}\n\nO usa "Lectura Manual"`);
+
+    await Swal.fire({
+      icon: "info",
+      title: "Configura Barcode to PC",
+      html: `
+        Para iniciar el escaneo, configura y escanea el código:<br><br>
+        También puedes usar "Lectura Manual".
+      `,
+      confirmButtonText: "Entendido",
+    });
   };
 
   const handleCancelar = async (id) => {
-    const ok = window.confirm("¿Cancelar esta invitación?");
-    if (!ok) return;
-    await cancelarInvitacion(id);
+    const result = await Swal.fire({
+      title: "¿Cancelar invitación?",
+      text: "Esta acción no se puede deshacer.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Sí, cancelar",
+      cancelButtonText: "No",
+    });
+
+    if (result.isConfirmed) {
+      await cancelarInvitacion(id);
+      Swal.fire("Cancelada", "La invitación ha sido cancelada.", "success");
+    }
   };
 
   const formatDate = (value) => {
@@ -73,14 +111,19 @@ export default function InvitadosList() {
   };
 
   const getEstadoStyles = (estado) => {
-    const base = "inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold";
-    
-    switch(estado) {
-      case "Activo": return `${base} bg-emerald-100 text-emerald-700`;
-      case "Pendiente": return `${base} bg-amber-100 text-amber-700`;
-      case "Cancelado": return `${base} bg-red-100 text-red-700`;
-      case "Expirado": return `${base} bg-slate-200 text-slate-700`;
-      default: return `${base} bg-slate-100 text-slate-600`;
+    const base =
+      "inline-flex px-2.5 py-1 rounded-full text-[11px] font-semibold";
+    switch (estado) {
+      case "Activo":
+        return `${base} bg-emerald-100 text-emerald-700`;
+      case "Pendiente":
+        return `${base} bg-amber-100 text-amber-700`;
+      case "Cancelado":
+        return `${base} bg-red-100 text-red-700`;
+      case "Expirado":
+        return `${base} bg-slate-200 text-slate-700`;
+      default:
+        return `${base} bg-slate-100 text-slate-600`;
     }
   };
 
@@ -149,34 +192,40 @@ export default function InvitadosList() {
               Escáner activo - Esperando código QR...
             </span>
           </div>
-          <p className="text-xs text-blue-600 mt-1">
-            Configura Barcode to PC para enviar a: http://localhost:5165/api/accesos/validar/{"{CODE}"}
-          </p>
         </div>
       )}
 
       {showNotification && ultimoAcceso && (
-        <div className={`mb-4 p-4 rounded-2xl border ${
-          ultimoAcceso.success 
-            ? 'bg-green-50 border-green-200' 
-            : 'bg-red-50 border-red-200'
-        }`}>
+        <div
+          className={`mb-4 p-4 rounded-2xl border ${
+            ultimoAcceso.success
+              ? "bg-green-50 border-green-200"
+              : "bg-red-50 border-red-200"
+          }`}
+        >
           <div className="flex items-center gap-2">
-            <span className={`text-lg ${ultimoAcceso.success ? 'text-green-600' : 'text-red-600'}`}>
-              {ultimoAcceso.success ? '✅' : '❌'}
+            <span
+              className={`text-lg ${
+                ultimoAcceso.success ? "text-green-600" : "text-red-600"
+              }`}
+            >
+              {ultimoAcceso.success ? "✅" : "❌"}
             </span>
             <div className="flex-1">
-              <p className={`font-semibold ${ultimoAcceso.success ? 'text-green-800' : 'text-red-800'}`}>
-                {ultimoAcceso.success ? 'Acceso procesado' : 'Error de acceso'}
+              <p
+                className={`font-semibold ${
+                  ultimoAcceso.success ? "text-green-800" : "text-red-800"
+                }`}
+              >
+                {ultimoAcceso.success ? "Acceso procesado" : "Error de acceso"}
               </p>
               <p className="text-sm text-slate-600 mt-1">
-                {ultimoAcceso.success 
+                {ultimoAcceso.success
                   ? `Código: ${ultimoAcceso.qrCode}`
-                  : ultimoAcceso.error
-                }
+                  : ultimoAcceso.error}
               </p>
             </div>
-            <button 
+            <button
               onClick={() => setShowNotification(false)}
               className="text-slate-400 hover:text-slate-600"
             >
@@ -204,7 +253,12 @@ export default function InvitadosList() {
         ) : error ? (
           <div className="px-4 md:px-6 py-6 text-sm text-red-600 text-center">
             {error}
-            <button onClick={clearError} className="ml-2 text-red-400 hover:text-red-300">✕</button>
+            <button
+              onClick={clearError}
+              className="ml-2 text-red-400 hover:text-red-300"
+            >
+              ✕
+            </button>
           </div>
         ) : filteredRows.length === 0 ? (
           <div className="px-4 md:px-6 py-8 text-sm text-slate-500 text-center">
@@ -213,18 +267,26 @@ export default function InvitadosList() {
         ) : (
           <ul className="divide-y divide-slate-100">
             {filteredRows.map((inv) => (
-              <li key={inv.invitadoID} className="px-4 md:px-6 py-4 text-xs md:text-sm hover:bg-emerald-50/70 transition-colors">
+              <li
+                key={inv.invitadoID}
+                className="px-4 md:px-6 py-4 text-xs md:text-sm hover:bg-emerald-50/70 transition-colors"
+              >
                 <div className="flex items-center gap-4">
                   <div className="w-1/6 flex justify-center">
                     {inv.codigoQR ? (
                       <div className="flex flex-col items-center gap-1">
-                        <img 
-                          src={generarQRImage(inv.codigoQR, 60)} 
+                        <img
+                          src={generarQRImage(inv.codigoQR, 60)}
                           alt={`QR ${inv.codigoQR}`}
                           className="w-12 h-12 border border-slate-200 rounded-lg"
                         />
                         <button
-                          onClick={() => descargarQR(inv.codigoQR, `invitado_${inv.nombreInvitado}`)}
+                          onClick={() =>
+                            descargarQR(
+                              inv.codigoQR,
+                              `invitado_${inv.nombreInvitado}`
+                            )
+                          }
                           className="text-[10px] text-emerald-600 hover:text-emerald-700 font-medium"
                         >
                           Descargar
@@ -232,7 +294,9 @@ export default function InvitadosList() {
                       </div>
                     ) : (
                       <div className="w-12 h-12 border border-dashed border-slate-300 rounded-lg flex items-center justify-center">
-                        <span className="text-[10px] text-slate-400">Sin QR</span>
+                        <span className="text-[10px] text-slate-400">
+                          Sin QR
+                        </span>
                       </div>
                     )}
                   </div>
@@ -278,7 +342,9 @@ export default function InvitadosList() {
                   <div className="flex-1 flex justify-center">
                     <button
                       onClick={() => handleCancelar(inv.invitadoID)}
-                      disabled={inv.estado === "Cancelado" || inv.estado === "Expirado"}
+                      disabled={
+                        inv.estado === "Cancelado" || inv.estado === "Expirado"
+                      }
                       className="inline-flex items-center px-3 py-1.5 rounded-full bg-red-600 text-white text-[11px] font-semibold hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       Cancelar
