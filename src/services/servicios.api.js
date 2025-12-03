@@ -136,6 +136,30 @@ export const ServiciosAPI = {
       notasAdmin,
     });
   },
+
+  // ---------- CARGOS DE SERVICIO ----------
+
+// POST /api/Servicios/cargos/servicios
+crearCargoServicio(data) {
+  return http.post("/Servicios/cargos/servicios", data);
+},
+
+// GET /api/Servicios/cargos/servicios
+getCargosServicios() {
+  return http.get("/Servicios/cargos/servicios");
+},
+
+// GET /api/Servicios/cargos/servicios/usuario/{usuarioId}
+getCargosServiciosByUsuario(usuarioId) {
+  return http.get(`/Servicios/cargos/servicios/usuario/${usuarioId}`);
+},
+
+// GET /api/Servicios/cargos/servicios/solicitud/{solicitudId}
+getCargosServiciosBySolicitud(solicitudId) {
+  return http.get(`/Servicios/cargos/servicios/solicitud/${solicitudId}`);
+},
 };
+
+
 
 export default ServiciosAPI;
