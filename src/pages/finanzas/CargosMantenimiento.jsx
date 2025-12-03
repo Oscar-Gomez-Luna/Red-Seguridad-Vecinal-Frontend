@@ -94,9 +94,7 @@ export default function CargosMantenimiento() {
   const descargarComprobante = async (pagoId) => {
     try {
       const response = await fetch(
-        `${
-          import.meta.env.VITE_API_BASE_URL || "http://localhost:5165/api"
-        }/Pagos/comprobante/${pagoId}`
+        `${import.meta.env.VITE_API_BASE_URL}/Pagos/comprobante/${pagoId}`
       );
       if (response.ok) {
         const blob = await response.blob();
@@ -120,42 +118,46 @@ export default function CargosMantenimiento() {
         const cargos = await getAllCargosMantenimiento();
 
         // DEBUG: Verificar estructura de datos
-        console.log('Cargos crudos del API:', cargos);
-        
+        console.log("Cargos crudos del API:", cargos);
+
         if (cargos.length > 0) {
-          console.log('Primer cargo crudo:', cargos[0]);
-          console.log('Campos disponibles:', Object.keys(cargos[0]));
+          console.log("Primer cargo crudo:", cargos[0]);
+          console.log("Campos disponibles:", Object.keys(cargos[0]));
         }
 
         // Usar la estructura EXACTA del primer código
         const formateados = cargos.map((c) => {
           const usuarioId = c.usuarioID || c.usuarioId;
-          console.log(`Cargo ${c.cargoMantenimientoID}: usuarioID=${c.usuarioID}, usuarioId=${c.usuarioId}, usuarioId final=${usuarioId}`);
-          
+          console.log(
+            `Cargo ${c.cargoMantenimientoID}: usuarioID=${c.usuarioID}, usuarioId=${c.usuarioId}, usuarioId final=${usuarioId}`
+          );
+
           return {
             ...c,
-            usuarioNombre: [
-              c.usuarioNombre || c.nombreUsuario,
-              c.usuarioApellidoP || c.apellidoPaterno,
-              c.usuarioApellidoM || c.apellidoMaterno,
-            ]
-              .filter(Boolean)
-              .join(" ") || `Usuario #${usuarioId}`,
+            usuarioNombre:
+              [
+                c.usuarioNombre || c.nombreUsuario,
+                c.usuarioApellidoP || c.apellidoPaterno,
+                c.usuarioApellidoM || c.apellidoMaterno,
+              ]
+                .filter(Boolean)
+                .join(" ") || `Usuario #${usuarioId}`,
             usuarioID: usuarioId, // Asegurar que siempre haya usuarioID
             tipo: "cargo",
             monto: parseFloat(c.monto) || 0,
             montoPagado: parseFloat(c.montoPagado) || 0,
-            saldoPendiente: (parseFloat(c.monto) || 0) - (parseFloat(c.montoPagado) || 0),
+            saldoPendiente:
+              (parseFloat(c.monto) || 0) - (parseFloat(c.montoPagado) || 0),
             estado: c.estado || "Pendiente",
             fechaCreacion: c.fechaCreacion,
             fechaVencimiento: c.fechaVencimiento,
             cargoMantenimientoID: c.cargoMantenimientoID,
             concepto: c.concepto,
-            notas: c.notas || ""
+            notas: c.notas || "",
           };
         });
 
-        console.log('Cargos formateados:', formateados);
+        console.log("Cargos formateados:", formateados);
         setRows(formateados);
       } else {
         const pagos = await obtenerTodosLosPagos();
@@ -340,9 +342,9 @@ export default function CargosMantenimiento() {
       (c) => c.cargoMantenimientoID === parseInt(idsSeleccionados[0])
     );
 
-    console.log('Primer cargo para pago:', primerCargo);
-    console.log('usuarioID:', primerCargo?.usuarioID);
-    console.log('usuarioId:', primerCargo?.usuarioId);
+    console.log("Primer cargo para pago:", primerCargo);
+    console.log("usuarioID:", primerCargo?.usuarioID);
+    console.log("usuarioId:", primerCargo?.usuarioId);
 
     if (!primerCargo) {
       alert("Error al obtener información del cargo");
@@ -350,7 +352,9 @@ export default function CargosMantenimiento() {
     }
 
     if (!primerCargo.usuarioID && primerCargo.usuarioID !== 0) {
-      alert("El cargo seleccionado no tiene un usuario asignado. No se puede procesar el pago.");
+      alert(
+        "El cargo seleccionado no tiene un usuario asignado. No se puede procesar el pago."
+      );
       return;
     }
 
@@ -369,40 +373,38 @@ export default function CargosMantenimiento() {
       detallesPagoJson: JSON.stringify(detalles),
     };
 
-    console.log('Payload a enviar:', payload);
-    console.log('detallesPagoJson:', payload.detallesPagoJson);
+    console.log("Payload a enviar:", payload);
+    console.log("detallesPagoJson:", payload.detallesPagoJson);
 
     try {
       setProcesandoPago(true);
       setErr("");
 
       const response = await fetch(
-        `${
-          import.meta.env.VITE_API_BASE_URL || "http://localhost:5165/api"
-        }/Pagos`,
+        `${import.meta.env.VITE_API_BASE_URL}/Pagos`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            'Accept': 'application/json',
+            Accept: "application/json",
           },
           body: JSON.stringify(payload),
         }
       );
 
-      console.log('Response status:', response.status);
-      console.log('Response status text:', response.statusText);
+      console.log("Response status:", response.status);
+      console.log("Response status text:", response.statusText);
 
       if (!response.ok) {
         let errorMessage = `Error ${response.status}: ${response.statusText}`;
         try {
           const errorData = await response.json();
-          console.error('Error data:', errorData);
+          console.error("Error data:", errorData);
           errorMessage = errorData.message || errorData.title || errorMessage;
         } catch (e) {
           // No se pudo parsear como JSON
           const text = await response.text();
-          console.error('Error text:', text);
+          console.error("Error text:", text);
         }
         throw new Error(errorMessage);
       }
@@ -420,7 +422,7 @@ export default function CargosMantenimiento() {
 
       // Recargar datos
       await loadAll();
-      
+
       alert("Pago procesado exitosamente");
     } catch (error) {
       console.error("Error al procesar pago:", error);
@@ -437,7 +439,7 @@ export default function CargosMantenimiento() {
   };
 
   const abrirModalEditar = (cargo) => {
-    console.log('Cargando datos para editar:', cargo);
+    console.log("Cargando datos para editar:", cargo);
     setCargoEditando({
       cargoMantenimientoID: cargo.cargoMantenimientoID,
       usuarioID: cargo.usuarioID, // Usar usuarioID
@@ -445,7 +447,7 @@ export default function CargosMantenimiento() {
       concepto: cargo.concepto,
       monto: cargo.monto,
       fechaVencimiento: cargo.fechaVencimiento,
-      notas: cargo.notas || ""
+      notas: cargo.notas || "",
     });
     setModalAbierto(true);
   };
@@ -476,14 +478,24 @@ export default function CargosMantenimiento() {
                 : "Gestión de cargos de mantenimiento del sistema"}
             </p>
           </div>
-          
+
           {!mostrarColumnasPagos && (
             <button
               onClick={abrirModalCrear}
               className="mt-4 md:mt-0 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors"
             >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              <svg
+                className="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
               </svg>
               Nuevo Cargo
             </button>
@@ -511,9 +523,17 @@ export default function CargosMantenimiento() {
             Búsqueda
           </div>
 
-          <div className={`p-4 bg-white grid ${mostrarColumnasPagos ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-3"} gap-4`}>
+          <div
+            className={`p-4 bg-white grid ${
+              mostrarColumnasPagos
+                ? "grid-cols-1 md:grid-cols-2"
+                : "grid-cols-1 md:grid-cols-3"
+            } gap-4`}
+          >
             <div>
-              <label className="text-sm text-slate-600">Buscar por nombre</label>
+              <label className="text-sm text-slate-600">
+                Buscar por nombre
+              </label>
               <input
                 type="text"
                 className="w-full rounded-lg border px-3 py-2"
@@ -615,9 +635,6 @@ export default function CargosMantenimiento() {
                   <th className="px-4 py-3 text-left">
                     {mostrarColumnasPagos ? "Fecha Pago" : "Creado"}
                   </th>
-                  {!mostrarColumnasPagos && (
-                    <th className="px-4 py-3 text-left">Acciones</th>
-                  )}
                 </tr>
               </thead>
 
@@ -626,8 +643,10 @@ export default function CargosMantenimiento() {
                   <tr>
                     <td
                       colSpan={
-                        !mostrarColumnasPagos 
-                          ? (filtroEstado === "Pendiente" ? 12 : 11)
+                        !mostrarColumnasPagos
+                          ? filtroEstado === "Pendiente"
+                            ? 12
+                            : 11
                           : 9
                       }
                       className="text-center py-6 text-slate-500"
@@ -637,8 +656,10 @@ export default function CargosMantenimiento() {
                   </tr>
                 ) : (
                   dataFiltrada.map((r) => {
-                    const esPendiente = r.estado === "Pendiente" && r.tipo === "cargo";
-                    const estaSeleccionado = cargosSeleccionados[r.cargoMantenimientoID];
+                    const esPendiente =
+                      r.estado === "Pendiente" && r.tipo === "cargo";
+                    const estaSeleccionado =
+                      cargosSeleccionados[r.cargoMantenimientoID];
 
                     return (
                       <tr
@@ -647,25 +668,28 @@ export default function CargosMantenimiento() {
                             ? `pago-${r.pagoID}`
                             : `cargo-${r.cargoMantenimientoID}`
                         }
-                        className={`border-t hover:bg-slate-50 ${estaSeleccionado ? "bg-emerald-50" : ""}`}
+                        className={`border-t hover:bg-slate-50 ${
+                          estaSeleccionado ? "bg-emerald-50" : ""
+                        }`}
                       >
-                        {!mostrarColumnasPagos && filtroEstado === "Pendiente" && (
-                          <td className="px-4 py-3">
-                            {esPendiente && (
-                              <input
-                                type="checkbox"
-                                className="w-4 h-4 text-emerald-600 rounded"
-                                checked={estaSeleccionado || false}
-                                onChange={(e) =>
-                                  handleCheckboxChange(
-                                    r.cargoMantenimientoID,
-                                    e.target.checked
-                                  )
-                                }
-                              />
-                            )}
-                          </td>
-                        )}
+                        {!mostrarColumnasPagos &&
+                          filtroEstado === "Pendiente" && (
+                            <td className="px-4 py-3">
+                              {esPendiente && (
+                                <input
+                                  type="checkbox"
+                                  className="w-4 h-4 text-emerald-600 rounded"
+                                  checked={estaSeleccionado || false}
+                                  onChange={(e) =>
+                                    handleCheckboxChange(
+                                      r.cargoMantenimientoID,
+                                      e.target.checked
+                                    )
+                                  }
+                                />
+                              )}
+                            </td>
+                          )}
 
                         <td className="px-4 py-3">
                           <div className="font-medium">{r.usuarioNombre}</div>
@@ -675,7 +699,9 @@ export default function CargosMantenimiento() {
                         </td>
 
                         <td className="px-4 py-3">
-                          {r.tipo === "pago" ? r.pagoID : r.cargoMantenimientoID}
+                          {r.tipo === "pago"
+                            ? r.pagoID
+                            : r.cargoMantenimientoID}
                         </td>
 
                         <td className="px-4 py-3">{r.concepto}</td>
@@ -686,7 +712,9 @@ export default function CargosMantenimiento() {
 
                         {!mostrarColumnasPagos && (
                           <td className="px-4 py-3">
-                            {r.montoPagado != null ? fmtMoney(r.montoPagado) : "-"}
+                            {r.montoPagado != null
+                              ? fmtMoney(r.montoPagado)
+                              : "-"}
                           </td>
                         )}
 
@@ -725,29 +753,32 @@ export default function CargosMantenimiento() {
                           </td>
                         )}
 
-                        {!mostrarColumnasPagos && filtroEstado === "Pendiente" && (
-                          <td className="px-4 py-3">
-                            {esPendiente && estaSeleccionado ? (
-                              <input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                max={r.saldoPendiente}
-                                className="w-28 rounded border px-2 py-1 text-sm"
-                                value={montosPago[r.cargoMantenimientoID] || ""}
-                                onChange={(e) =>
-                                  handleMontoChange(
-                                    r.cargoMantenimientoID,
-                                    e.target.value
-                                  )
-                                }
-                                placeholder="0.00"
-                              />
-                            ) : (
-                              "-"
-                            )}
-                          </td>
-                        )}
+                        {!mostrarColumnasPagos &&
+                          filtroEstado === "Pendiente" && (
+                            <td className="px-4 py-3">
+                              {esPendiente && estaSeleccionado ? (
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  max={r.saldoPendiente}
+                                  className="w-28 rounded border px-2 py-1 text-sm"
+                                  value={
+                                    montosPago[r.cargoMantenimientoID] || ""
+                                  }
+                                  onChange={(e) =>
+                                    handleMontoChange(
+                                      r.cargoMantenimientoID,
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder="0.00"
+                                />
+                              ) : (
+                                "-"
+                              )}
+                            </td>
+                          )}
 
                         {!mostrarColumnasPagos && (
                           <td className="px-4 py-3">
@@ -758,20 +789,6 @@ export default function CargosMantenimiento() {
                         <td className="px-4 py-3">
                           {fmtDate(r.fechaCreacion)}
                         </td>
-
-                        {!mostrarColumnasPagos && (
-                          <td className="px-4 py-3">
-                            <button
-                              onClick={() => abrirModalEditar(r)}
-                              className="text-blue-600 hover:text-blue-800"
-                              title="Editar"
-                            >
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                            </button>
-                          </td>
-                        )}
                       </tr>
                     );
                   })

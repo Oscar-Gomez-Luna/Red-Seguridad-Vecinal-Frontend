@@ -14,6 +14,7 @@ import {
   Shield,
   UserCog,
 } from "lucide-react";
+import Swal from "sweetalert2";
 
 const emptyForm = {
   usuarioID: null,
@@ -80,6 +81,36 @@ export default function UsuarioForm({
     });
   };
 
+  const handleCancel = async () => {
+    // Si hay cambios en el formulario, preguntar antes de cancelar
+    const hasChanges = initial
+      ? Object.keys(form).some((key) => {
+          if (key === "password" || key === "numeroTarjeta") return false; // Ignorar campos opcionales vacíos
+          return form[key] !== (initial[key] ?? "");
+        })
+      : Object.keys(form).some((key) => form[key] !== emptyForm[key]);
+
+    if (hasChanges) {
+      const result = await Swal.fire({
+        icon: "warning",
+        title: "¿Cancelar cambios?",
+        text: "Los cambios realizados se perderán",
+        showCancelButton: true,
+        confirmButtonColor: "#6b7280",
+        cancelButtonColor: "#10B981",
+        confirmButtonText: "Sí, cancelar",
+        cancelButtonText: "Continuar editando",
+      });
+
+      if (!result.isConfirmed) {
+        return;
+      }
+    }
+
+    onCancel();
+    location.reload();
+  };
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -101,7 +132,6 @@ export default function UsuarioForm({
             onChange={handleChange}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition"
             required
-            disabled
           >
             <option value="">Seleccione un tipo</option>
             {tipos.map((t) => (
@@ -334,9 +364,7 @@ export default function UsuarioForm({
       <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
         <button
           type="button"
-          onClick={() => {
-            onCancel, location.reload();
-          }}
+          onClick={handleCancel}
           disabled={saving}
           className="px-6 py-2.5 rounded-lg text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition disabled:opacity-50 flex items-center gap-2"
         >

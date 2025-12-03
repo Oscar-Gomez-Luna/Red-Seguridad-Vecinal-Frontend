@@ -70,9 +70,7 @@ export default function CargosServicios() {
   const descargarComprobante = async (pagoId) => {
     try {
       const response = await fetch(
-        `${
-          import.meta.env.VITE_API_BASE_URL || "http://localhost:5165/api"
-        }/Pagos/comprobante/${pagoId}`
+        `${import.meta.env.VITE_API_BASE_URL}/Pagos/comprobante/${pagoId}`
       );
       if (response.ok) {
         const blob = await response.blob();
@@ -319,9 +317,7 @@ export default function CargosServicios() {
       setErr("");
 
       const response = await fetch(
-        `${
-          import.meta.env.VITE_API_BASE_URL || "http://localhost:5165/api"
-        }/Pagos`,
+        `${import.meta.env.VITE_API_BASE_URL}/Pagos`,
         {
           method: "POST",
           headers: {
@@ -421,7 +417,7 @@ export default function CargosServicios() {
             <button
               onClick={loadAll}
               disabled={loading}
-              className="w-full bg-sky-600 hover:bg-sky-700 disabled:bg-sky-300 text-white py-2 rounded-lg transition-colors"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white py-2 rounded-lg transition-colors"
             >
               {loading ? "Cargando..." : "Actualizar"}
             </button>

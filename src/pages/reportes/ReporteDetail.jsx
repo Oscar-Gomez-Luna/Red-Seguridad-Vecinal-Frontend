@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useContext } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ReportesContext from "../../context/Reportes/ReportesContext";
 import CategoriaSeleccionModal from "../../components/CategoriaSeleccionModal";
+import Swal from "sweetalert2";
 
 // Paleta base usada
 const COLORS = {
@@ -95,21 +96,56 @@ export default function ReporteDetail() {
     const newVal = !item.visto;
 
     if (newVal) {
-      // Para marcar como atendido, mostrar modal de categoría
-      setShowCategoriaModal(true);
+      // Para marcar como atendido, mostrar confirmación con SweetAlert
+      const result = await Swal.fire({
+        icon: "question",
+        title: "¿Marcar como atendido?",
+        html: `
+          <p>El reporte <strong>"${item.titulo}"</strong> será marcado como ATENDIDO.</p>
+          <p class="mt-2">Se abrirá un modal para seleccionar la categoría del aviso que se creará.</p>
+        `,
+        showCancelButton: true,
+        confirmButtonColor: "#10B981",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Continuar",
+        cancelButtonText: "Cancelar",
+      });
+
+      if (result.isConfirmed) {
+        setShowCategoriaModal(true);
+      }
     } else {
       // Para marcar como pendiente, confirmación simple
-      const confirmar = window.confirm(
-        `¿Marcar el reporte "${item.titulo}" como PENDIENTE?`
-      );
+      const result = await Swal.fire({
+        icon: "warning",
+        title: "¿Marcar como pendiente?",
+        text: `¿Deseas marcar el reporte "${item.titulo}" como PENDIENTE?`,
+        showCancelButton: true,
+        confirmButtonColor: "#10B981",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Sí, marcar",
+        cancelButtonText: "Cancelar",
+      });
 
-      if (confirmar) {
+      if (result.isConfirmed) {
         try {
           await marcarVisto(item.reporteID, false);
-          alert("Reporte marcado como pendiente.");
+          await Swal.fire({
+            icon: "success",
+            title: "¡Reporte actualizado!",
+            text: "El reporte ha sido marcado como pendiente",
+            confirmButtonColor: "#10B981",
+            confirmButtonText: "Entendido",
+          });
           fetchReporteById(Number(id));
         } catch (e) {
-          alert("Error: " + (e.message || "No se pudo actualizar el estado"));
+          await Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: e.message || "No se pudo actualizar el estado del reporte",
+            confirmButtonColor: "#dc2626",
+            confirmButtonText: "Entendido",
+          });
         }
       }
     }
@@ -119,9 +155,21 @@ export default function ReporteDetail() {
     if (!item) return;
     try {
       await navigator.clipboard.writeText(`${item.latitud}, ${item.longitud}`);
-      alert("Coordenadas copiadas");
+      await Swal.fire({
+        icon: "success",
+        title: "¡Coordenadas copiadas!",
+        text: `${item.latitud}, ${item.longitud}`,
+        timer: 2000,
+        showConfirmButton: false,
+      });
     } catch {
-      alert("No se pudo copiar");
+      await Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "No se pudieron copiar las coordenadas",
+        confirmButtonColor: "#dc2626",
+        confirmButtonText: "Entendido",
+      });
     }
   };
 
@@ -388,14 +436,22 @@ export default function ReporteDetail() {
         onConfirm={async (categoriaID) => {
           try {
             await marcarVistoConCategoria(item.reporteID, categoriaID);
-            alert(
-              "Reporte marcado como atendido. Se ha creado un aviso para la comunidad."
-            );
+            await Swal.fire({
+              icon: "success",
+              title: "¡Reporte atendido!",
+              text: "El reporte ha sido marcado como atendido y se ha creado un aviso para la comunidad",
+              confirmButtonColor: "#10B981",
+              confirmButtonText: "Entendido",
+            });
             fetchReporteById(Number(id));
           } catch (error) {
-            alert(
-              "Error: " + (error.message || "No se pudo completar la acción")
-            );
+            await Swal.fire({
+              icon: "error",
+              title: "Error",
+              text: error.message || "No se pudo completar la acción",
+              confirmButtonColor: "#dc2626",
+              confirmButtonText: "Entendido",
+            });
           }
         }}
       />

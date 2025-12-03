@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import ReportesContext from "../../context/Reportes/ReportesContext";
 import CategoriaSeleccionModal from "../../components/CategoriaSeleccionModal";
+import Swal from "sweetalert2";
 
 const Badge = ({ children, className = "" }) => (
   <span
@@ -87,26 +88,55 @@ export default function ReportesList() {
     const newVal = !r.visto;
 
     if (newVal) {
-      // Para marcar como atendido, mostrar modal de categoría
-      const confirmar = window.confirm(
-        `¿Marcar el reporte "${r.titulo}" como ATENDIDO?\n\nSelecciona la categoría para el aviso que se creará.`
-      );
+      // Para marcar como atendido, mostrar confirmación con SweetAlert
+      const result = await Swal.fire({
+        icon: "question",
+        title: "¿Marcar como atendido?",
+        html: `
+          <p>El reporte <strong>"${r.titulo}"</strong> será marcado como ATENDIDO.</p>
+          <p class="mt-2">Se abrirá un modal para seleccionar la categoría del aviso que se creará.</p>
+        `,
+        showCancelButton: true,
+        confirmButtonColor: "#10B981",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Continuar",
+        cancelButtonText: "Cancelar",
+      });
 
-      if (confirmar) {
+      if (result.isConfirmed) {
         prepararMarcarComoAtendido(r);
       }
     } else {
       // Para marcar como pendiente, confirmación simple
-      const confirmar = window.confirm(
-        `¿Marcar el reporte "${r.titulo}" como PENDIENTE?`
-      );
+      const result = await Swal.fire({
+        icon: "warning",
+        title: "¿Marcar como pendiente?",
+        text: `¿Deseas marcar el reporte "${r.titulo}" como PENDIENTE?`,
+        showCancelButton: true,
+        confirmButtonColor: "#FBBF24",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Sí, marcar",
+        cancelButtonText: "Cancelar",
+      });
 
-      if (confirmar) {
+      if (result.isConfirmed) {
         try {
           await marcarVisto(r.reporteID, false);
-          alert("Reporte marcado como pendiente.");
+          await Swal.fire({
+            icon: "success",
+            title: "¡Reporte actualizado!",
+            text: "El reporte ha sido marcado como pendiente",
+            confirmButtonColor: "#10B981",
+            confirmButtonText: "Entendido",
+          });
         } catch (e) {
-          alert("Error: " + (e.message || "No se pudo actualizar el estado"));
+          await Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: e.message || "No se pudo actualizar el estado del reporte",
+            confirmButtonColor: "#EF4444",
+            confirmButtonText: "Entendido",
+          });
         }
       }
     }
@@ -115,7 +145,7 @@ export default function ReportesList() {
   return (
     <div className="p-5 md:p-7">
       {/* Header */}
-      <div className="rounded-2xl shadow-sm mb-5 border border-[#10B981] bg-[#10B981] text-white">
+      <div className="rounded-2xl shadow-sm mb-5 border border-[#047857] bg-[#047857] text-white">
         <div className="px-5 md:px-7 py-5 flex items-center justify-between">
           <div>
             <h1 className="text-2xl md:text-3xl font-extrabold">
@@ -129,7 +159,7 @@ export default function ReportesList() {
           <button
             onClick={() => Promise.all([fetchReportes(), fetchTiposReporte()])}
             className="inline-flex items-center gap-2 rounded-xl border border-white/40 px-4 py-2.5 text-base font-medium
-                       bg-white/10 text-white hover:bg-white/10 active:scale-95 transition"
+                       bg-white/10 text-white hover:bg-white/20 active:scale-95 transition"
           >
             <svg
               className="w-5 h-5"
@@ -162,11 +192,11 @@ export default function ReportesList() {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Buscar por título, descripción, dirección o usuario…"
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base outline-none focus:ring-2 focus:ring-[#F97316]"
           />
         </div>
         <select
-          className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-base outline-none focus:ring-2 focus:ring-emerald-500"
+          className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-base outline-none focus:ring-2 focus:ring-[#F97316]"
           value={tipo}
           onChange={(e) => setTipo(e.target.value)}
         >
@@ -178,7 +208,7 @@ export default function ReportesList() {
           ))}
         </select>
         <select
-          className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-base outline-none focus:ring-2 focus:ring-emerald-500"
+          className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-base outline-none focus:ring-2 focus:ring-[#F97316]"
           value={estado}
           onChange={(e) => setEstado(e.target.value)}
         >
@@ -192,7 +222,7 @@ export default function ReportesList() {
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm">
         {loading ? (
           <div className="p-10 grid place-items-center">
-            <div className="animate-spin h-7 w-7 border-2 border-slate-300 border-t-transparent rounded-full" />
+            <div className="animate-spin h-7 w-7 border-2 border-[#F97316] border-t-transparent rounded-full" />
           </div>
         ) : error ? (
           <div className="p-6 text-rose-600 text-base">{error}</div>
@@ -205,7 +235,7 @@ export default function ReportesList() {
             {filtered.map((r) => (
               <li
                 key={r.reporteID}
-                className="p-5 md:p-6 transition rounded-xl hover:bg-emerald-50"
+                className="p-5 md:p-6 transition rounded-xl hover:bg-[#F9FAFB]"
               >
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   {/* Info */}
@@ -244,8 +274,8 @@ export default function ReportesList() {
                   <div className="flex items-center gap-2.5">
                     <button
                       onClick={() => nav(`/admin/reportes/${r.reporteID}`)}
-                      className="px-4 py-2.5 text-base rounded-xl border border-[#047857] bg-[#047857] text-white
-                                 active:scale-95 transition"
+                      className="px-4 py-2.5 text-base rounded-xl border border-[#F97316] bg-[#F97316] text-white
+                                 hover:bg-[#ea580c] active:scale-95 transition"
                     >
                       Ver Detalle
                     </button>
@@ -255,8 +285,8 @@ export default function ReportesList() {
                       className={`px-4 py-2.5 text-base rounded-xl border active:scale-95 transition
                                   ${
                                     r.visto
-                                      ? "border-[#10B981] bg-[#10B981] text-white"
-                                      : "border-[#FBBF24] bg-[#FBBF24] text-[#111827]"
+                                      ? "border-[#10B981] bg-[#10B981] text-white hover:bg-[#059669]"
+                                      : "border-[#FBBF24] bg-[#FBBF24] text-[#111827] hover:bg-[#f59e0b]"
                                   }`}
                     >
                       {r.visto
@@ -280,13 +310,21 @@ export default function ReportesList() {
           if (pendingReporte) {
             try {
               await confirmarMarcarComoAtendido(categoriaID);
-              alert(
-                "Reporte marcado como atendido. Se ha creado un aviso para la comunidad."
-              );
+              await Swal.fire({
+                icon: "success",
+                title: "¡Reporte atendido!",
+                text: "El reporte ha sido marcado como atendido y se ha creado un aviso para la comunidad",
+                confirmButtonColor: "#10B981",
+                confirmButtonText: "Entendido",
+              });
             } catch (error) {
-              alert(
-                "Error: " + (error.message || "No se pudo completar la acción")
-              );
+              await Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: error.message || "No se pudo completar la acción",
+                confirmButtonColor: "#EF4444",
+                confirmButtonText: "Entendido",
+              });
             }
           }
         }}

@@ -2,6 +2,7 @@ import { useEffect, useState, useContext } from "react";
 import { useAuth } from "@/context/AuthContext";
 import UsuariosContext from "@/context/Usuarios/UsuariosContext";
 import UsuarioForm from "./UsuarioForm";
+import Swal from "sweetalert2";
 
 export default function UsuariosList() {
   const { user: authUser } = useAuth(); // Obtener usuario logueado
@@ -50,6 +51,13 @@ export default function UsuariosList() {
       await obtenerUsuario(u.usuarioID);
     } catch (err) {
       console.error("Error obteniendo detalle de usuario:", err);
+      await Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "No se pudo cargar la información del usuario",
+        confirmButtonColor: "#EF4444",
+        confirmButtonText: "Entendido",
+      });
     }
   };
 
@@ -62,34 +70,74 @@ export default function UsuariosList() {
   }, [usuarioSeleccionado]);
 
   const handleDelete = async (u) => {
-    if (
-      !window.confirm(
-        `¿Desactivar al usuario "${u.nombre} ${u.apellidoPaterno}"?`
-      )
-    ) {
-      return;
-    }
-    try {
-      await eliminarUsuario(u.usuarioID);
-      await listarUsuarios();
-    } catch (err) {
-      console.error("Error eliminando usuario:", err);
+    const result = await Swal.fire({
+      icon: "warning",
+      title: "¿Desactivar usuario?",
+      html: `¿Estás seguro de desactivar al usuario <strong>"${u.nombre} ${u.apellidoPaterno}"</strong>?`,
+      showCancelButton: true,
+      confirmButtonColor: "#EF4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Sí, desactivar",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await eliminarUsuario(u.usuarioID);
+        await listarUsuarios();
+        await Swal.fire({
+          icon: "success",
+          title: "¡Usuario desactivado!",
+          text: "El usuario ha sido desactivado correctamente",
+          confirmButtonColor: "#10B981",
+          confirmButtonText: "Entendido",
+        });
+      } catch (err) {
+        console.error("Error eliminando usuario:", err);
+        await Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: err.message || "No se pudo desactivar el usuario",
+          confirmButtonColor: "#EF4444",
+          confirmButtonText: "Entendido",
+        });
+      }
     }
   };
 
   const handleReactivate = async (u) => {
-    if (
-      !window.confirm(
-        `¿Reactivar al usuario "${u.nombre} ${u.apellidoPaterno}"?`
-      )
-    ) {
-      return;
-    }
-    try {
-      await reactivarUsuario(u.usuarioID);
-      await listarUsuarios();
-    } catch (err) {
-      console.error("Error reactivando usuario:", err);
+    const result = await Swal.fire({
+      icon: "question",
+      title: "¿Reactivar usuario?",
+      html: `¿Estás seguro de reactivar al usuario <strong>"${u.nombre} ${u.apellidoPaterno}"</strong>?`,
+      showCancelButton: true,
+      confirmButtonColor: "#10B981",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Sí, reactivar",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await reactivarUsuario(u.usuarioID);
+        await listarUsuarios();
+        await Swal.fire({
+          icon: "success",
+          title: "¡Usuario reactivado!",
+          text: "El usuario ha sido reactivado correctamente",
+          confirmButtonColor: "#10B981",
+          confirmButtonText: "Entendido",
+        });
+      } catch (err) {
+        console.error("Error reactivando usuario:", err);
+        await Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: err.message || "No se pudo reactivar el usuario",
+          confirmButtonColor: "#EF4444",
+          confirmButtonText: "Entendido",
+        });
+      }
     }
   };
 
@@ -124,6 +172,15 @@ export default function UsuariosList() {
         }
 
         await actualizarUsuario(updateData);
+
+        await Swal.fire({
+          icon: "success",
+          title: "¡Usuario actualizado!",
+          text: "Los datos del usuario han sido actualizados correctamente",
+          confirmButtonColor: "#10B981",
+          confirmButtonText: "Entendido",
+        });
+
         location.reload();
       } else {
         const usuarioData = {
@@ -142,12 +199,27 @@ export default function UsuariosList() {
         };
 
         await registrarUsuario(usuarioData);
+
+        await Swal.fire({
+          icon: "success",
+          title: "¡Usuario creado!",
+          text: "El usuario ha sido registrado correctamente",
+          confirmButtonColor: "#10B981",
+          confirmButtonText: "Entendido",
+        });
       }
 
       await listarUsuarios();
       setEditing(null);
     } catch (err) {
       console.error("Error guardando usuario:", err);
+      await Swal.fire({
+        icon: "error",
+        title: "Error al guardar",
+        text: err.message || "No se pudo guardar el usuario",
+        confirmButtonColor: "#EF4444",
+        confirmButtonText: "Entendido",
+      });
     }
   };
 

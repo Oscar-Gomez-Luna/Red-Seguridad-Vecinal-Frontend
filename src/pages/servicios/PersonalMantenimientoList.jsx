@@ -1,6 +1,7 @@
 import { useContext, useEffect, useMemo, useState } from "react";
 import PersonalContext from "@/context/Personal/PersonalContext";
 import PersonalMantenimientoForm from "./PersonalMantenimientoForm";
+import Swal from "sweetalert2";
 
 export default function PersonalMantenimientoList() {
   const {
@@ -10,7 +11,7 @@ export default function PersonalMantenimientoList() {
     notification,
     getPersonalMantenimiento,
     crearPersonalMantenimiento,
-    actualizarPersonalMantenimientoCompleto, // CAMBIAR: Usar la función completa
+    actualizarPersonalMantenimientoCompleto,
     clearError,
     clearNotification,
   } = useContext(PersonalContext);
@@ -60,29 +61,58 @@ export default function PersonalMantenimientoList() {
   const handleSubmitForm = async (payload) => {
     try {
       await crearPersonalMantenimiento(payload);
+      await Swal.fire({
+        icon: "success",
+        title: "¡Personal registrado!",
+        text: "El personal de mantenimiento ha sido registrado correctamente",
+        confirmButtonColor: "#10B981",
+        confirmButtonText: "Entendido",
+      });
       setFormOpen(false);
       setViewing(null);
     } catch (err) {
       console.error("Error al guardar:", err);
+      await Swal.fire({
+        icon: "error",
+        title: "Error al registrar",
+        text:
+          err.message || "No se pudo registrar el personal de mantenimiento",
+        confirmButtonColor: "#EF4444",
+        confirmButtonText: "Entendido",
+      });
     }
   };
 
-  // CORREGIDO: Usar la función COMPLETA que actualiza tanto persona como personal
   const handleUpdateForm = async (id, payload) => {
     try {
-      await actualizarPersonalMantenimientoCompleto(id, payload); // CAMBIAR AQUÍ
+      await actualizarPersonalMantenimientoCompleto(id, payload);
+      await Swal.fire({
+        icon: "success",
+        title: "¡Personal actualizado!",
+        text: "Los datos del personal han sido actualizados correctamente",
+        confirmButtonColor: "#10B981",
+        confirmButtonText: "Entendido",
+      });
       setFormOpen(false);
       setViewing(null);
       setMode("create");
     } catch (err) {
       console.error("Error al actualizar:", err);
+      await Swal.fire({
+        icon: "error",
+        title: "Error al actualizar",
+        text:
+          err.message || "No se pudo actualizar el personal de mantenimiento",
+        confirmButtonColor: "#EF4444",
+        confirmButtonText: "Entendido",
+      });
     }
   };
 
   return (
     <div className="px-4 md:px-8 pb-10">
       <header className="pt-6 pb-4">
-        <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">
+        <h1 className="text-2xl md:text-3xl font-extrabold text-[#111827]">
           Personal de Mantenimiento
         </h1>
         <p className="mt-1 text-slate-500 max-w-3xl">
@@ -94,7 +124,7 @@ export default function PersonalMantenimientoList() {
         <div
           className={`mb-4 p-4 rounded-2xl border ${
             notification.type === "success"
-              ? "bg-green-50 border-green-200"
+              ? "bg-emerald-50 border-emerald-200"
               : "bg-blue-50 border-blue-200"
           }`}
         >
@@ -102,7 +132,7 @@ export default function PersonalMantenimientoList() {
             <span
               className={`text-lg ${
                 notification.type === "success"
-                  ? "text-green-600"
+                  ? "text-emerald-600"
                   : "text-blue-600"
               }`}
             >
@@ -112,7 +142,7 @@ export default function PersonalMantenimientoList() {
               <p
                 className={`font-semibold ${
                   notification.type === "success"
-                    ? "text-green-800"
+                    ? "text-emerald-800"
                     : "text-blue-800"
                 }`}
               >
@@ -130,10 +160,10 @@ export default function PersonalMantenimientoList() {
       )}
 
       <section className="mb-6">
-        <div className="bg-emerald-600 text-white rounded-3xl px-6 py-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-sm">
+        <div className="bg-[#047857] text-white rounded-3xl px-6 py-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-sm">
           <div>
             <h2 className="text-xl font-bold">Gestión de Personal</h2>
-            <p className="text-emerald-100 text-sm md:text-base">
+            <p className="opacity-90 text-sm md:text-base">
               Administra el personal de mantenimiento del fraccionamiento.
             </p>
           </div>
@@ -153,21 +183,21 @@ export default function PersonalMantenimientoList() {
           <input
             type="text"
             placeholder="Buscar por nombre, puesto, turno o días laborales..."
-            className="w-full rounded-full border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            className="w-full rounded-full border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316]"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <button
           onClick={abrirNuevo}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#10B981] text-white text-sm font-semibold hover:bg-[#059669] transition-colors"
         >
           + Registrar Personal
         </button>
       </section>
 
       <section className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="bg-emerald-700 text-white text-xs md:text-sm font-semibold px-4 md:px-6 py-3 flex items-center">
+        <div className="bg-[#047857] text-white text-xs md:text-sm font-semibold px-4 md:px-6 py-3 flex items-center">
           <div className="w-1/6 text-center">Nombre</div>
           <div className="w-1/6 text-center">Puesto</div>
           <div className="w-1/6 text-center">Turno</div>
@@ -179,7 +209,7 @@ export default function PersonalMantenimientoList() {
 
         {loading && personalMantenimiento.length === 0 ? (
           <div className="px-4 md:px-6 py-8 text-sm text-slate-500 text-center">
-            Cargando personal...
+            <div className="animate-spin h-6 w-6 border-2 border-[#F97316] border-t-transparent rounded-full mx-auto" />
           </div>
         ) : error ? (
           <div className="px-4 md:px-6 py-6 text-sm text-red-600 text-center">
@@ -200,11 +230,11 @@ export default function PersonalMantenimientoList() {
             {filtrados.map((p) => (
               <li
                 key={p.personalMantenimientoID}
-                className="px-4 md:px-6 py-4 text-xs md:text-sm hover:bg-emerald-50/70 transition-colors"
+                className="px-4 md:px-6 py-4 text-xs md:text-sm hover:bg-[#F9FAFB] transition-colors"
               >
                 <div className="flex items-center gap-4">
                   <div className="w-1/6 text-center">
-                    <div className="font-medium text-slate-800">
+                    <div className="font-medium text-[#111827]">
                       {p.nombrePersona}
                     </div>
                   </div>
@@ -234,7 +264,7 @@ export default function PersonalMantenimientoList() {
                   <div className="flex-1 flex justify-center">
                     <button
                       onClick={() => abrirDetalle(p)}
-                      className="inline-flex items-center px-3 py-1.5 rounded-full bg-slate-600 text-white text-[11px] font-semibold hover:bg-slate-700 transition-colors"
+                      className="inline-flex items-center px-3 py-1.5 rounded-full bg-[#F97316] text-white text-[11px] font-semibold hover:bg-[#ea580c] transition-colors"
                     >
                       Ver Detalles
                     </button>

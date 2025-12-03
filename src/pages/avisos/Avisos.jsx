@@ -4,6 +4,7 @@ import AvisosContext from "@/context/Avisos/AvisosContext";
 import AvisosList from "./AvisosList";
 import AvisoForm from "./AvisoForm";
 import AvisosFilters from "@/pages/avisos/AvisosFilters";
+import Swal from "sweetalert2";
 
 export default function Avisos() {
   const {
@@ -165,16 +166,44 @@ export default function Avisos() {
       : await crearAviso(values);
 
     if (ok) {
-      alert(editing ? "Aviso actualizado" : "Aviso creado");
+      await Swal.fire({
+        icon: "success",
+        title: editing ? "¡Aviso actualizado!" : "¡Aviso creado!",
+        text: editing
+          ? "El aviso se ha actualizado correctamente"
+          : "El aviso se ha creado correctamente",
+        confirmButtonColor: "#059669",
+        confirmButtonText: "Entendido",
+      });
       setShowForm(false);
       setEditing(null);
     }
   };
 
   const onDelete = async (item) => {
-    if (!confirm(`¿Eliminar el aviso "${item.titulo}"?`)) return;
-    const ok = await eliminarAviso(item.avisoID);
-    if (ok) alert("Aviso eliminado");
+    const result = await Swal.fire({
+      icon: "warning",
+      title: "¿Eliminar aviso?",
+      text: `¿Estás seguro de eliminar el aviso "${item.titulo}"? Esta acción no se puede deshacer.`,
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (result.isConfirmed) {
+      const ok = await eliminarAviso(item.avisoID);
+      if (ok) {
+        await Swal.fire({
+          icon: "success",
+          title: "¡Aviso eliminado!",
+          text: "El aviso se ha eliminado correctamente",
+          confirmButtonColor: "#059669",
+          confirmButtonText: "Entendido",
+        });
+      }
+    }
   };
 
   const catMap = useMemo(

@@ -19,6 +19,7 @@
     "react-hook-form": "^7.65.0",
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.9.5",
+    "sweetalert2": "^11.26.3",
     "zod": "^4.1.12",
     "zustand": "^5.0.8"
   },
@@ -41,7 +42,7 @@
   "resolutions": {
     "vite": "npm:rolldown-vite@7.1.14"
   },
-   "engines": {
+  "engines": {
     "node": ">=20"
   }
 }
