@@ -1,81 +1,116 @@
 // components/cargos/ModalCargoMantenimiento.jsx
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import Swal from "sweetalert2";
 
 const API = import.meta.env.VITE_API_BASE_URL;
 
-const ModalCargoMantenimiento = ({ isOpen, onClose, cargoExistente = null, onSuccess }) => {
+const ModalCargoMantenimiento = ({
+  isOpen,
+  onClose,
+  cargoExistente = null,
+  onSuccess,
+}) => {
   const [formData, setFormData] = useState({
-    usuarioID: '',
-    personalMantenimientoID: '',
-    concepto: '',
-    monto: '',
-    fechaVencimiento: '',
-    notas: ''
+    usuarioID: "",
+    personalMantenimientoID: "",
+    concepto: "",
+    monto: "",
+    fechaVencimiento: "",
+    notas: "",
   });
-  
+
   const [usuarios, setUsuarios] = useState([]);
   const [personalMantenimiento, setPersonalMantenimiento] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  // Cargar datos iniciales
+  // Cargar datos iniciales y reiniciar estados
   useEffect(() => {
     if (isOpen) {
+      // REINICIAR ESTADOS CADA VEZ QUE SE ABRE EL MODAL
+      setLoading(false); // <- ESTO ES CLAVE
+      setError("");
+      setSuccess("");
+
       cargarUsuarios();
       cargarPersonalMantenimiento();
-      
-      // Si estamos editando, prellenar el formulario
+
       if (cargoExistente) {
-        console.log('Cargo recibido para editar en modal:', cargoExistente);
-        
-        // Función helper para convertir valores a string o string vacío
+        console.log("Cargo recibido para editar en modal:", cargoExistente);
+
         const safeString = (value) => {
-          if (value === null || value === undefined || value === '') return '';
+          if (value === null || value === undefined || value === "") return "";
           return String(value);
         };
-        
-        // Asegurar que los valores sean strings (o string vacío si son null/undefined)
+
         setFormData({
           usuarioID: safeString(cargoExistente.usuarioID),
-          personalMantenimientoID: safeString(cargoExistente.personalMantenimientoID),
-          concepto: cargoExistente.concepto || '',
-          monto: cargoExistente.monto?.toString() || '',
-          fechaVencimiento: cargoExistente.fechaVencimiento ? 
-            new Date(cargoExistente.fechaVencimiento).toISOString().split('T')[0] : '',
-          notas: cargoExistente.notas || ''
+          personalMantenimientoID: safeString(
+            cargoExistente.personalMantenimientoID
+          ),
+          concepto: cargoExistente.concepto || "",
+          monto: cargoExistente.monto?.toString() || "",
+          fechaVencimiento: cargoExistente.fechaVencimiento
+            ? new Date(cargoExistente.fechaVencimiento)
+                .toISOString()
+                .split("T")[0]
+            : "",
+          notas: cargoExistente.notas || "",
         });
-        
-        console.log('FormData inicializado en modal:', {
+
+        console.log("FormData inicializado en modal:", {
           usuarioID: safeString(cargoExistente.usuarioID),
-          personalMantenimientoID: safeString(cargoExistente.personalMantenimientoID),
+          personalMantenimientoID: safeString(
+            cargoExistente.personalMantenimientoID
+          ),
           concepto: cargoExistente.concepto,
-          monto: cargoExistente.monto
+          monto: cargoExistente.monto,
         });
       } else {
         // Si es nuevo, limpiar formulario
         setFormData({
-          usuarioID: '',
-          personalMantenimientoID: '',
-          concepto: '',
-          monto: '',
-          fechaVencimiento: '',
-          notas: ''
+          usuarioID: "",
+          personalMantenimientoID: "",
+          concepto: "",
+          monto: "",
+          fechaVencimiento: "",
+          notas: "",
         });
       }
-      
-      setError('');
-      setSuccess('');
     }
   }, [isOpen, cargoExistente]);
 
   const cargarUsuarios = async () => {
     try {
       const res = await axios.get(`${API}/Usuarios`);
-      setUsuarios(res.data);
+
+      // Filtrar solo usuarios con tipo "Usuario" o "Admin"
+      const usuariosFiltrados = res.data.filter((usuario) => {
+        const tipoUsuario = (usuario.tipoUsuario || "").toLowerCase();
+        return tipoUsuario === "usuario" || tipoUsuario === "admin";
+      });
+
+      console.log(
+        "Usuarios filtrados (Usuario/Admin):",
+        usuariosFiltrados.length,
+        "de",
+        res.data.length
+      );
+      setUsuarios(usuariosFiltrados);
+
+      if (usuariosFiltrados.length === 0) {
+        console.warn('No se encontraron usuarios con tipo "Usuario" o "Admin"');
+      }
     } catch (err) {
-      console.error('Error cargando usuarios:', err);
+      console.error("Error cargando usuarios:", err);
+      await Swal.fire({
+        title: "Error",
+        text: "No se pudieron cargar los usuarios. Por favor, intenta nuevamente.",
+        icon: "error",
+        confirmButtonColor: "#ef4444",
+      });
     }
   };
 
@@ -84,78 +119,240 @@ const ModalCargoMantenimiento = ({ isOpen, onClose, cargoExistente = null, onSuc
       const res = await axios.get(`${API}/Servicios/personal-mantenimiento`);
       setPersonalMantenimiento(res.data);
     } catch (err) {
-      console.error('Error cargando personal:', err);
+      console.error("Error cargando personal:", err);
     }
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
+  };
+
+  const handleCancel = async () => {
+    // Verificar si hay cambios sin guardar
+    const hasChanges =
+      formData.usuarioID !== (cargoExistente?.usuarioID?.toString() || "") ||
+      formData.personalMantenimientoID !==
+        (cargoExistente?.personalMantenimientoID?.toString() || "") ||
+      formData.concepto !== (cargoExistente?.concepto || "") ||
+      formData.monto !== (cargoExistente?.monto?.toString() || "") ||
+      formData.fechaVencimiento !==
+        (cargoExistente?.fechaVencimiento
+          ? new Date(cargoExistente.fechaVencimiento)
+              .toISOString()
+              .split("T")[0]
+          : "") ||
+      formData.notas !== (cargoExistente?.notas || "");
+
+    if (hasChanges) {
+      const result = await Swal.fire({
+        title: "¿Descartar cambios?",
+        text: "Tienes cambios sin guardar. ¿Seguro que quieres cancelar?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#ef4444",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Sí, descartar",
+        cancelButtonText: "Continuar editando",
+        reverseButtons: true,
+      });
+
+      if (result.isConfirmed) {
+        onClose();
+      }
+    } else {
+      onClose();
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
 
     // Validaciones básicas
     if (!formData.concepto.trim()) {
-      setError('El concepto es requerido');
+      setError("El concepto es requerido");
       setLoading(false);
+
+      await Swal.fire({
+        title: "Campo requerido",
+        text: "El concepto es obligatorio",
+        icon: "warning",
+        confirmButtonColor: "#10b981",
+      });
       return;
     }
 
     if (!formData.monto || parseFloat(formData.monto) <= 0) {
-      setError('El monto debe ser mayor a 0');
+      setError("El monto debe ser mayor a 0");
       setLoading(false);
+
+      await Swal.fire({
+        title: "Monto inválido",
+        text: "El monto debe ser mayor a 0",
+        icon: "warning",
+        confirmButtonColor: "#10b981",
+      });
       return;
     }
 
     try {
       // Construir payload - IMPORTANTE: manejar strings vacíos como null
       const payload = {
-        usuarioID: formData.usuarioID && formData.usuarioID.trim() !== '' ? parseInt(formData.usuarioID) : null,
-        personalMantenimientoID: formData.personalMantenimientoID && formData.personalMantenimientoID.trim() !== '' ? parseInt(formData.personalMantenimientoID) : null,
+        usuarioID:
+          formData.usuarioID && formData.usuarioID.trim() !== ""
+            ? parseInt(formData.usuarioID)
+            : null,
+        personalMantenimientoID:
+          formData.personalMantenimientoID &&
+          formData.personalMantenimientoID.trim() !== ""
+            ? parseInt(formData.personalMantenimientoID)
+            : null,
         concepto: formData.concepto,
         monto: parseFloat(formData.monto),
-        fechaVencimiento: formData.fechaVencimiento && formData.fechaVencimiento.trim() !== '' ? formData.fechaVencimiento : null,
-        notas: formData.notas || ''
+        fechaVencimiento:
+          formData.fechaVencimiento && formData.fechaVencimiento.trim() !== ""
+            ? formData.fechaVencimiento
+            : null,
+        notas: formData.notas || "",
       };
 
-      console.log('Enviando payload al backend:', payload);
+      console.log("Enviando payload al backend:", payload);
 
-      if (cargoExistente) {
-        // Actualizar cargo existente
-        const response = await axios.put(
-          `${API}/Servicios/cargos/mantenimiento/${cargoExistente.cargoMantenimientoID}`,
-          payload
-        );
-        console.log('Respuesta de actualización:', response.data);
-        setSuccess('Cargo actualizado exitosamente');
+      // Mostrar confirmación con SweetAlert
+      const actionText = cargoExistente ? "actualizar" : "crear";
+      const usuarioSeleccionado = usuarios.find(
+        (u) => u.usuarioID === parseInt(formData.usuarioID)
+      );
+      const personalSeleccionado = personalMantenimiento.find(
+        (p) =>
+          p.personalMantenimientoID ===
+          parseInt(formData.personalMantenimientoID)
+      );
+
+      const result = await Swal.fire({
+        title: `¿${cargoExistente ? "Actualizar" : "Crear"} cargo?`,
+        html: `
+          <div class="text-left space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-semibold">Concepto:</span>
+              <span>${formData.concepto}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="font-semibold">Monto:</span>
+              <span>$${parseFloat(formData.monto).toFixed(2)}</span>
+            </div>
+            ${
+              usuarioSeleccionado
+                ? `
+            <div class="flex items-center justify-between">
+              <span class="font-semibold">Usuario:</span>
+              <span>${usuarioSeleccionado.nombre} ${usuarioSeleccionado.apellidoPaterno}</span>
+            </div>
+            `
+                : ""
+            }
+            ${
+              personalSeleccionado
+                ? `
+            <div class="flex items-center justify-between">
+              <span class="font-semibold">Personal:</span>
+              <span>${personalSeleccionado.nombrePersona} (${personalSeleccionado.puesto})</span>
+            </div>
+            `
+                : ""
+            }
+            ${
+              formData.fechaVencimiento
+                ? `
+            <div class="flex items-center justify-between">
+              <span class="font-semibold">Vencimiento:</span>
+              <span>${new Date(
+                formData.fechaVencimiento
+              ).toLocaleDateString()}</span>
+            </div>
+            `
+                : ""
+            }
+          </div>
+        `,
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonColor: "#10b981",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: `Sí, ${actionText}`,
+        cancelButtonText: "Cancelar",
+        showLoaderOnConfirm: true,
+        preConfirm: async () => {
+          try {
+            if (cargoExistente) {
+              // Actualizar cargo existente
+              const response = await axios.put(
+                `${API}/Servicios/cargos/mantenimiento/${cargoExistente.cargoMantenimientoID}`,
+                payload
+              );
+              console.log("Respuesta de actualización:", response.data);
+              return response.data;
+            } else {
+              // Crear nuevo cargo
+              const response = await axios.post(
+                `${API}/Servicios/cargos/mantenimiento`,
+                payload
+              );
+              console.log("Respuesta de creación:", response.data);
+              return response.data;
+            }
+          } catch (err) {
+            Swal.showValidationMessage(
+              `Error: ${
+                err.response?.data?.message ||
+                err.message ||
+                "No se pudo guardar el cargo"
+              }`
+            );
+          }
+        },
+        allowOutsideClick: () => !Swal.isLoading(),
+      });
+
+      if (result.isConfirmed) {
+        await Swal.fire({
+          title: "¡Éxito!",
+          text: `Cargo ${
+            cargoExistente ? "actualizado" : "creado"
+          } exitosamente`,
+          icon: "success",
+          confirmButtonColor: "#10b981",
+        });
+
+        // Asegurar que loading se ponga en false antes de cerrar
+        setLoading(false);
+
+        // Esperar un momento para mostrar el mensaje de éxito
+        setTimeout(() => {
+          if (onSuccess) onSuccess();
+          onClose();
+        }, 1000);
       } else {
-        // Crear nuevo cargo
-        const response = await axios.post(
-          `${API}/Servicios/cargos/mantenimiento`,
-          payload
-        );
-        console.log('Respuesta de creación:', response.data);
-        setSuccess('Cargo creado exitosamente');
+        setLoading(false);
       }
-
-      // Esperar un momento para mostrar el mensaje de éxito
-      setTimeout(() => {
-        if (onSuccess) onSuccess();
-        onClose();
-      }, 1500);
-
     } catch (err) {
-      console.error('Error al guardar cargo:', err);
-      console.error('Respuesta del error:', err.response?.data);
-      setError(err.response?.data?.message || 'Error al guardar el cargo');
+      console.error("Error al guardar cargo:", err);
+      console.error("Respuesta del error:", err.response?.data);
+
+      await Swal.fire({
+        title: "Error",
+        text: err.response?.data?.message || "Error al guardar el cargo",
+        icon: "error",
+        confirmButtonColor: "#ef4444",
+      });
+
+      setError(err.response?.data?.message || "Error al guardar el cargo");
       setLoading(false);
     }
   };
@@ -169,19 +366,22 @@ const ModalCargoMantenimiento = ({ isOpen, onClose, cargoExistente = null, onSuc
         <div className="sticky top-0 bg-white border-b px-6 py-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-bold text-gray-800">
-              {cargoExistente ? 'Editar Cargo de Mantenimiento' : 'Agregar Cargo de Mantenimiento'}
+              {cargoExistente
+                ? "Editar Cargo de Mantenimiento"
+                : "Agregar Cargo de Mantenimiento"}
             </h2>
             <button
-              onClick={onClose}
+              onClick={handleCancel}
               className="text-gray-400 hover:text-gray-600 text-2xl"
+              disabled={loading}
             >
               &times;
             </button>
           </div>
           <p className="text-gray-600 text-sm mt-1">
-            {cargoExistente 
+            {cargoExistente
               ? `ID: #${cargoExistente.cargoMantenimientoID}`
-              : 'Complete el formulario para crear un nuevo cargo'}
+              : "Complete el formulario para crear un nuevo cargo"}
           </p>
         </div>
 
@@ -214,9 +414,11 @@ const ModalCargoMantenimiento = ({ isOpen, onClose, cargoExistente = null, onSuc
                   disabled={loading}
                 >
                   <option value="">Seleccionar usuario (opcional)</option>
-                  {usuarios.map(usuario => (
+                  {usuarios.map((usuario) => (
                     <option key={usuario.usuarioID} value={usuario.usuarioID}>
-                      {usuario.nombre} {usuario.apellidoPaterno} {usuario.apellidoMaterno}
+                      {usuario.nombre} {usuario.apellidoPaterno}{" "}
+                      {usuario.apellidoMaterno}
+                      {usuario.tipoUsuario && ` - ${usuario.tipoUsuario}`}
                     </option>
                   ))}
                 </select>
@@ -235,8 +437,11 @@ const ModalCargoMantenimiento = ({ isOpen, onClose, cargoExistente = null, onSuc
                   disabled={loading}
                 >
                   <option value="">Seleccionar personal (opcional)</option>
-                  {personalMantenimiento.map(personal => (
-                    <option key={personal.personalMantenimientoID} value={personal.personalMantenimientoID}>
+                  {personalMantenimiento.map((personal) => (
+                    <option
+                      key={personal.personalMantenimientoID}
+                      value={personal.personalMantenimientoID}
+                    >
                       {personal.nombrePersona} - {personal.puesto}
                     </option>
                   ))}
@@ -266,7 +471,9 @@ const ModalCargoMantenimiento = ({ isOpen, onClose, cargoExistente = null, onSuc
                   Monto *
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                  <span className="absolute left-3 top-2.5 text-gray-500">
+                    $
+                  </span>
                   <input
                     type="number"
                     name="monto"
@@ -318,7 +525,7 @@ const ModalCargoMantenimiento = ({ isOpen, onClose, cargoExistente = null, onSuc
             <div className="mt-8 pt-4 border-t flex justify-end space-x-3">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleCancel}
                 className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
                 disabled={loading}
               >
@@ -329,7 +536,16 @@ const ModalCargoMantenimiento = ({ isOpen, onClose, cargoExistente = null, onSuc
                 disabled={loading}
                 className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white rounded-lg font-medium transition-colors"
               >
-                {loading ? 'Guardando...' : (cargoExistente ? 'Actualizar Cargo' : 'Crear Cargo')}
+                {loading ? (
+                  <>
+                    <span className="inline-block animate-spin mr-2">⟳</span>
+                    Guardando...
+                  </>
+                ) : cargoExistente ? (
+                  "Actualizar Cargo"
+                ) : (
+                  "Crear Cargo"
+                )}
               </button>
             </div>
           </form>

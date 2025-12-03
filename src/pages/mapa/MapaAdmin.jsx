@@ -14,6 +14,7 @@ import { useAuth } from "@/context/AuthContext";
 import MapaContext from "@/context/Mapa/MapaContext";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import Swal from "sweetalert2";
 
 // Importar imágenes de Leaflet
 import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
@@ -141,13 +142,24 @@ export default function MapaAdmin() {
     const lng = Number(form.longitud);
 
     if (!lat || !lng) {
-      alert(
-        "Selecciona una ubicación en el mapa (latitud y longitud válidas)."
-      );
+      await Swal.fire({
+        title: "Ubicación requerida",
+        text: "Selecciona una ubicación en el mapa (latitud y longitud válidas).",
+        icon: "warning",
+        confirmButtonColor: "#10b981",
+        confirmButtonText: "Entendido",
+      });
       return;
     }
+
     if (!form.comentario.trim()) {
-      alert("El comentario es obligatorio.");
+      await Swal.fire({
+        title: "Comentario requerido",
+        text: "El comentario es obligatorio para describir la zona.",
+        icon: "warning",
+        confirmButtonColor: "#10b981",
+        confirmButtonText: "Entendido",
+      });
       return;
     }
 
@@ -164,26 +176,153 @@ export default function MapaAdmin() {
         if (usuarioID != null) {
           payload.usuarioID = usuarioID;
         }
-        await addMarcador(payload);
+
+        // Mostrar confirmación antes de crear
+        const result = await Swal.fire({
+          title: "¿Crear nuevo marcador?",
+          html: `
+            <div class="text-left">
+              <p><strong>Tipo:</strong> ${form.indicador}</p>
+              <p><strong>Comentario:</strong> ${form.comentario.trim()}</p>
+              <p><strong>Ubicación:</strong><br/>
+              Lat: ${lat.toFixed(6)}<br/>
+              Lng: ${lng.toFixed(6)}</p>
+            </div>
+          `,
+          icon: "question",
+          showCancelButton: true,
+          confirmButtonColor: "#10b981",
+          cancelButtonColor: "#ef4444",
+          confirmButtonText: "Sí, crear",
+          cancelButtonText: "Cancelar",
+        });
+
+        if (result.isConfirmed) {
+          await addMarcador(payload);
+
+          await Swal.fire({
+            title: "¡Marcador creado!",
+            text: "El marcador se ha agregado exitosamente al mapa.",
+            icon: "success",
+            confirmButtonColor: "#10b981",
+          });
+
+          setFormOpen(false);
+        }
       } else {
         payload.marcadorID = form.marcadorID;
-        await updateMarcador(payload);
-      }
 
-      setFormOpen(false);
+        // Mostrar confirmación antes de editar
+        const result = await Swal.fire({
+          title: "¿Actualizar marcador?",
+          html: `
+            <div class="text-left">
+              <p><strong>Tipo:</strong> ${form.indicador}</p>
+              <p><strong>Comentario:</strong> ${form.comentario.trim()}</p>
+              <p><strong>Ubicación:</strong><br/>
+              Lat: ${lat.toFixed(6)}<br/>
+              Lng: ${lng.toFixed(6)}</p>
+            </div>
+          `,
+          icon: "question",
+          showCancelButton: true,
+          confirmButtonColor: "#10b981",
+          cancelButtonColor: "#ef4444",
+          confirmButtonText: "Sí, actualizar",
+          cancelButtonText: "Cancelar",
+        });
+
+        if (result.isConfirmed) {
+          await updateMarcador(payload);
+
+          await Swal.fire({
+            title: "¡Marcador actualizado!",
+            text: "El marcador se ha modificado exitosamente.",
+            icon: "success",
+            confirmButtonColor: "#10b981",
+          });
+
+          setFormOpen(false);
+        }
+      }
     } catch (err) {
       console.error("Error al guardar marcador:", err);
+
+      await Swal.fire({
+        title: "Error",
+        text: "Ocurrió un error al guardar el marcador. Por favor, intenta nuevamente.",
+        icon: "error",
+        confirmButtonColor: "#ef4444",
+      });
     }
   };
 
   const handleDelete = async (marcador) => {
-    const ok = window.confirm(
-      `¿Seguro que deseas eliminar la zona "${marcador.indicador}"?\nComentario: ${marcador.comentario}`
-    );
-    if (!ok) return;
+    const cfg = indicadorConfig[marcador.indicador] || {
+      color: "#3b82f6",
+      label: marcador.indicador,
+    };
 
-    await deleteMarcador(marcador.marcadorID);
+    const result = await Swal.fire({
+      title: "¿Eliminar marcador?",
+      html: `
+        <div class="text-left">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="w-3 h-3 rounded-full" style="background-color: ${
+              cfg.color
+            }"></span>
+            <span class="font-semibold">${cfg.label}</span>
+          </div>
+          <p><strong>Comentario:</strong> ${marcador.comentario}</p>
+          <p><strong>Ubicación:</strong><br/>
+          Lat: ${marcador.latitud.toFixed(6)}<br/>
+          Lng: ${marcador.longitud.toFixed(6)}</p>
+          <p class="mt-2 text-red-600 text-sm font-medium">Esta acción no se puede deshacer.</p>
+        </div>
+      `,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+      reverseButtons: true,
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteMarcador(marcador.marcadorID);
+
+        await Swal.fire({
+          title: "¡Eliminado!",
+          text: "El marcador ha sido eliminado exitosamente.",
+          icon: "success",
+          confirmButtonColor: "#10b981",
+        });
+      } catch (err) {
+        await Swal.fire({
+          title: "Error",
+          text: "No se pudo eliminar el marcador. Por favor, intenta nuevamente.",
+          icon: "error",
+          confirmButtonColor: "#ef4444",
+        });
+      }
+    }
   };
+
+  // Mostrar error con SweetAlert si existe
+  useEffect(() => {
+    if (error) {
+      Swal.fire({
+        title: "Error",
+        text: error,
+        icon: "error",
+        confirmButtonColor: "#ef4444",
+      }).then(() => {
+        clearError();
+      });
+    }
+  }, [error, clearError]);
 
   // Centro del mapa
   const center = useMemo(() => {
@@ -212,12 +351,6 @@ export default function MapaAdmin() {
           + Nuevo marcador
         </button>
       </div>
-
-      {error && (
-        <div className="px-4 py-2 rounded-lg bg-red-50 text-sm text-red-700 border border-red-100">
-          {error}
-        </div>
-      )}
 
       <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-[500px]">
         {/* MAPA */}
@@ -276,6 +409,12 @@ export default function MapaAdmin() {
                             className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700"
                           >
                             Editar marcador
+                          </button>
+                          <button
+                            onClick={() => handleDelete(m)}
+                            className="ml-2 inline-flex items-center px-3 py-1 rounded-full bg-red-600 text-white text-xs font-semibold hover:bg-red-700"
+                          >
+                            Eliminar
                           </button>
                         </div>
                       </Popup>

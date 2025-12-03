@@ -3,6 +3,7 @@ import { useContext, useEffect, useMemo, useState } from "react";
 import ReservasContext from "../../context/Reservas/ReservasContext";
 import { useAmenidades } from "../../context/Amenidades/AmenidadesContext";
 import ReservaForm from "./ReservaForm";
+import Swal from "sweetalert2";
 
 export default function ReservasList() {
   const {
@@ -30,6 +31,12 @@ export default function ReservasList() {
         await Promise.all([fetchReservas(), cargarAmenidades()]);
       } catch (err) {
         console.error("Error al cargar reservas:", err);
+        await Swal.fire({
+          title: "Error de carga",
+          text: "No se pudieron cargar las reservas. Por favor, recarga la página.",
+          icon: "error",
+          confirmButtonColor: "#ef4444",
+        });
       }
     };
     load();
@@ -49,8 +56,72 @@ export default function ReservasList() {
     try {
       setSaving(true);
       setLocalError("");
-      await crearReserva(values);
-      setOpenForm(false);
+
+      // Mostrar confirmación antes de crear
+      const result = await Swal.fire({
+        title: "¿Crear nueva reserva?",
+        html: `
+          <div class="text-left space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-semibold">Amenidad:</span>
+              <span>${values.amenidadNombre || "Seleccionar"}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="font-semibold">Usuario:</span>
+              <span>${values.nombreUsuario}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="font-semibold">Casa:</span>
+              <span>${values.numeroCasa}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="font-semibold">Fecha:</span>
+              <span>${values.fechaReserva}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="font-semibold">Horario:</span>
+              <span>${values.horaInicio} - ${values.horaFin}</span>
+            </div>
+            <div>
+              <span class="font-semibold">Motivo:</span>
+              <p class="text-sm bg-slate-50 p-2 rounded mt-1">${
+                values.motivo
+              }</p>
+            </div>
+          </div>
+        `,
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonColor: "#10b981",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Sí, crear",
+        cancelButtonText: "Cancelar",
+        showLoaderOnConfirm: true,
+        preConfirm: async () => {
+          try {
+            await crearReserva(values);
+          } catch (error) {
+            Swal.showValidationMessage(
+              `Error: ${
+                error?.response?.data?.message ||
+                error.message ||
+                "No se pudo crear la reserva"
+              }`
+            );
+          }
+        },
+        allowOutsideClick: () => !Swal.isLoading(),
+      });
+
+      if (result.isConfirmed) {
+        await Swal.fire({
+          title: "¡Reserva creada!",
+          text: "La reserva se ha creado exitosamente.",
+          icon: "success",
+          confirmButtonColor: "#10b981",
+        });
+        setOpenForm(false);
+      }
     } catch (err) {
       console.error(err);
       const msg =
@@ -63,49 +134,173 @@ export default function ReservasList() {
     }
   };
 
-  const confirmar = (msg) => window.confirm(msg);
-
   const handleCancelar = async (reserva) => {
-    const ok = confirmar(
-      `¿Cancelar la reserva de ${reserva.amenidadNombre} para ${reserva.nombreUsuario}?`
-    );
-    if (!ok) return;
+    const result = await Swal.fire({
+      title: "¿Cancelar reserva?",
+      html: `
+        <div class="text-left space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold">Amenidad:</span>
+            <span>${reserva.amenidadNombre}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="font-semibold">Usuario:</span>
+            <span>${reserva.nombreUsuario}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="font-semibold">Casa:</span>
+            <span>${reserva.numeroCasa}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="font-semibold">Fecha:</span>
+            <span>${String(reserva.fechaReserva).slice(0, 10)}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="font-semibold">Estado actual:</span>
+            <span>${reserva.estado}</span>
+          </div>
+          <p class="mt-3 text-rose-600 text-sm font-medium">
+            Esta acción no se puede deshacer. La reserva será cancelada permanentemente.
+          </p>
+        </div>
+      `,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Sí, cancelar",
+      cancelButtonText: "No, conservar",
+      reverseButtons: true,
+      showLoaderOnConfirm: true,
+      preConfirm: async () => {
+        try {
+          await cancelarReserva(reserva.reservaID);
+        } catch (error) {
+          Swal.showValidationMessage(
+            `Error: ${
+              error?.response?.data?.message ||
+              error.message ||
+              "No se pudo cancelar la reserva"
+            }`
+          );
+        }
+      },
+      allowOutsideClick: () => !Swal.isLoading(),
+    });
 
-    try {
-      setSaving(true);
-      setLocalError("");
-      await cancelarReserva(reserva.reservaID);
-    } catch (err) {
-      console.error(err);
-      const msg =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Error al cancelar la reserva.";
-      setLocalError(msg);
-    } finally {
-      setSaving(false);
+    if (result.isConfirmed) {
+      await Swal.fire({
+        title: "¡Reserva cancelada!",
+        text: "La reserva ha sido cancelada exitosamente.",
+        icon: "success",
+        confirmButtonColor: "#10b981",
+      });
     }
   };
 
   const handleEstado = async (reserva, nuevoEstado) => {
-    const ok = confirmar(
-      `¿Cambiar el estado de la reserva a "${nuevoEstado}"?`
-    );
-    if (!ok) return;
+    const estadoConfig = {
+      Aprobada: {
+        color: "#10b981",
+        icon: "success",
+        title: "Aprobar reserva",
+        confirmText: "Aprobar",
+        confirmColor: "#10b981",
+      },
+      Rechazada: {
+        color: "#f59e0b",
+        icon: "warning",
+        title: "Rechazar reserva",
+        confirmText: "Rechazar",
+        confirmColor: "#f59e0b",
+      },
+    };
 
-    try {
-      setSaving(true);
-      setLocalError("");
-      await actualizarEstadoReserva(reserva.reservaID, nuevoEstado);
-    } catch (err) {
-      console.error(err);
-      const msg =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Error al actualizar el estado de la reserva.";
-      setLocalError(msg);
-    } finally {
-      setSaving(false);
+    const config = estadoConfig[nuevoEstado] || {
+      color: "#6b7280",
+      icon: "question",
+      title: `Cambiar estado a ${nuevoEstado}`,
+      confirmText: "Confirmar",
+      confirmColor: "#6b7280",
+    };
+
+    const result = await Swal.fire({
+      title: config.title,
+      html: `
+        <div class="text-left space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold">Amenidad:</span>
+            <span>${reserva.amenidadNombre}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="font-semibold">Usuario:</span>
+            <span>${reserva.nombreUsuario}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="font-semibold">Casa:</span>
+            <span>${reserva.numeroCasa}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="font-semibold">Estado actual:</span>
+            <span>${reserva.estado}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="font-semibold">Nuevo estado:</span>
+            <span class="font-bold" style="color: ${
+              config.color
+            }">${nuevoEstado}</span>
+          </div>
+          ${
+            nuevoEstado === "Rechazada"
+              ? '<p class="mt-3 text-amber-600 text-sm font-medium">El usuario será notificado sobre el rechazo de su reserva.</p>'
+              : ""
+          }
+        </div>
+      `,
+      icon: config.icon,
+      showCancelButton: true,
+      confirmButtonColor: config.confirmColor,
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: `Sí, ${config.confirmText.toLowerCase()}`,
+      cancelButtonText: "Cancelar",
+      showLoaderOnConfirm: true,
+      preConfirm: async () => {
+        try {
+          await actualizarEstadoReserva(reserva.reservaID, nuevoEstado);
+        } catch (error) {
+          Swal.showValidationMessage(
+            `Error: ${
+              error?.response?.data?.message ||
+              error.message ||
+              "No se pudo actualizar el estado"
+            }`
+          );
+        }
+      },
+      allowOutsideClick: () => !Swal.isLoading(),
+    });
+
+    if (result.isConfirmed) {
+      const successTitle =
+        nuevoEstado === "Aprobada"
+          ? "¡Reserva aprobada!"
+          : nuevoEstado === "Rechazada"
+          ? "Reserva rechazada"
+          : "Estado actualizado";
+
+      const successText =
+        nuevoEstado === "Aprobada"
+          ? "La reserva ha sido aprobada exitosamente."
+          : nuevoEstado === "Rechazada"
+          ? "La reserva ha sido rechazada."
+          : "El estado de la reserva ha sido actualizado.";
+
+      await Swal.fire({
+        title: successTitle,
+        text: successText,
+        icon: "success",
+        confirmButtonColor: "#10b981",
+      });
     }
   };
 
@@ -156,6 +351,20 @@ export default function ReservasList() {
     );
   };
 
+  // Mostrar error con SweetAlert si existe
+  useEffect(() => {
+    if (errorFinal) {
+      Swal.fire({
+        title: "Error",
+        text: errorFinal,
+        icon: "error",
+        confirmButtonColor: "#ef4444",
+      }).then(() => {
+        setLocalError("");
+      });
+    }
+  }, [errorFinal]);
+
   return (
     <div className="p-4 md:p-6">
       {/* Encabezado */}
@@ -182,23 +391,64 @@ export default function ReservasList() {
             type="button"
             onClick={handleNueva}
             className="inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-60"
-            disabled={loading}
+            disabled={loading || saving}
           >
-            + Nueva reserva
+            {saving ? (
+              <>
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Procesando...
+              </>
+            ) : (
+              "+ Nueva reserva"
+            )}
           </button>
         </div>
       </div>
 
-      {/* Errores */}
-      {errorFinal && (
-        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {errorFinal}
-        </div>
-      )}
-
       {/* Loading */}
       {loading && (
-        <div className="mb-4 text-sm text-slate-500">Cargando reservas...</div>
+        <div className="mb-4 flex items-center justify-center text-sm text-slate-500">
+          <svg
+            className="animate-spin mr-2 h-4 w-4 text-emerald-600"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+          Cargando reservas...
+        </div>
       )}
 
       {/* Tabla */}
@@ -227,9 +477,57 @@ export default function ReservasList() {
                 <tr>
                   <td
                     colSpan={9}
-                    className="px-4 py-6 text-center text-slate-500"
+                    className="px-4 py-8 text-center text-slate-500"
                   >
-                    {loading ? "Cargando..." : "No hay reservas registradas."}
+                    {loading ? (
+                      <div className="flex items-center justify-center">
+                        <svg
+                          className="animate-spin mr-2 h-4 w-4 text-emerald-600"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Cargando...
+                      </div>
+                    ) : busqueda ? (
+                      <div className="space-y-2">
+                        <div className="text-slate-400">
+                          No se encontraron reservas para "{busqueda}"
+                        </div>
+                        <button
+                          onClick={() => setBusqueda("")}
+                          className="px-3 py-1 text-xs rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200"
+                        >
+                          Limpiar búsqueda
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="text-slate-400">
+                          No hay reservas registradas
+                        </div>
+                        <button
+                          onClick={handleNueva}
+                          className="px-4 py-2 text-sm rounded-full bg-emerald-600 text-white hover:bg-emerald-700"
+                        >
+                          Crear primera reserva
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ) : (
@@ -264,30 +562,38 @@ export default function ReservasList() {
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex flex-col sm:flex-row gap-1 justify-center">
-                        <button
-                          type="button"
-                          onClick={() => handleEstado(r, "Aprobada")}
-                          className="px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
-                          disabled={saving}
-                        >
-                          Aprobar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleEstado(r, "Rechazada")}
-                          className="px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-60"
-                          disabled={saving}
-                        >
-                          Rechazar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleCancelar(r)}
-                          className="px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-60"
-                          disabled={saving}
-                        >
-                          Cancelar
-                        </button>
+                        {r.estado !== "Aprobada" &&
+                          r.estado !== "Cancelada" && (
+                            <button
+                              type="button"
+                              onClick={() => handleEstado(r, "Aprobada")}
+                              className="px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
+                              disabled={saving}
+                            >
+                              Aprobar
+                            </button>
+                          )}
+                        {r.estado !== "Rechazada" &&
+                          r.estado !== "Cancelada" && (
+                            <button
+                              type="button"
+                              onClick={() => handleEstado(r, "Rechazada")}
+                              className="px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-60"
+                              disabled={saving}
+                            >
+                              Rechazar
+                            </button>
+                          )}
+                        {r.estado !== "Cancelada" && (
+                          <button
+                            type="button"
+                            onClick={() => handleCancelar(r)}
+                            className="px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-60"
+                            disabled={saving}
+                          >
+                            Cancelar
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

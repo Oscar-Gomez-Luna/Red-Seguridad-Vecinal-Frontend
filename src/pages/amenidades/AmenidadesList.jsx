@@ -212,7 +212,7 @@ export default function AmenidadesList() {
                         className="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
                         disabled={saving}
                       >
-                        Editar
+                        Ver Detalles
                       </button>
                     </td>
                   </tr>

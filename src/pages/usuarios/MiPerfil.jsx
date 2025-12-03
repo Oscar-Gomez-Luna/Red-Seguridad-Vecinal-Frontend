@@ -15,6 +15,7 @@ import {
   CreditCard,
   Shield,
 } from "lucide-react";
+import Swal from "sweetalert2";
 
 export default function MiPerfil() {
   const navigate = useNavigate();
@@ -56,6 +57,14 @@ export default function MiPerfil() {
 
     if (!userId) {
       console.error("No hay userId en la sesión:", authUser);
+      Swal.fire({
+        title: "Error de sesión",
+        text: "No se pudo identificar tu sesión. Por favor, inicia sesión nuevamente.",
+        icon: "error",
+        confirmButtonColor: "#ef4444",
+      }).then(() => {
+        navigate("/auth/login");
+      });
       return;
     }
 
@@ -77,10 +86,24 @@ export default function MiPerfil() {
         email: perfil.email || "",
         password: "", // No se muestra por seguridad
         numeroTarjeta: "", // No se muestra por seguridad
-        fechaVencimiento: perfil.fechaVencimiento || "", // SÍ se muestra
+        fechaVencimiento: perfil.fechaVencimiento || "",
       });
     }
   }, [perfil]);
+
+  // Mostrar errores con SweetAlert
+  useEffect(() => {
+    if (error) {
+      Swal.fire({
+        title: "Error",
+        text: error,
+        icon: "error",
+        confirmButtonColor: "#ef4444",
+      }).then(() => {
+        clearError();
+      });
+    }
+  }, [error, clearError]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -93,36 +116,186 @@ export default function MiPerfil() {
 
     // Validar campos requeridos
     if (!form.nombre || !form.apellidoPaterno || !form.email) {
-      alert("Por favor completa los campos obligatorios");
+      await Swal.fire({
+        title: "Campos incompletos",
+        text: "Por favor completa los campos obligatorios: Nombre, Apellido Paterno y Correo Electrónico.",
+        icon: "warning",
+        confirmButtonColor: "#10b981",
+        confirmButtonText: "Entendido",
+      });
       return;
     }
 
-    try {
-      // Preparar datos para enviar
-      const dataToSend = {
-        usuarioID: form.usuarioID,
-        numeroCasa: form.numeroCasa || "",
-        calle: form.calle || "",
-        nombre: form.nombre,
-        apellidoPaterno: form.apellidoPaterno,
-        apellidoMaterno: form.apellidoMaterno || "",
-        telefono: form.telefono || "",
-        fechaNacimiento: form.fechaNacimiento || "2000-01-01",
-        email: form.email,
-        password: form.password || "",
-        numeroTarjeta: form.numeroTarjeta || "",
-        fechaVencimiento: form.fechaVencimiento || "",
-      };
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      await Swal.fire({
+        title: "Correo inválido",
+        text: "Por favor ingresa un correo electrónico válido.",
+        icon: "warning",
+        confirmButtonColor: "#10b981",
+        confirmButtonText: "Entendido",
+      });
+      return;
+    }
 
-      const result = await actualizarPerfil(dataToSend);
+    // Validar formato de tarjeta si se proporciona
+    if (
+      form.numeroTarjeta &&
+      !/^\d{16}$/.test(form.numeroTarjeta.replace(/\s/g, ""))
+    ) {
+      await Swal.fire({
+        title: "Tarjeta inválida",
+        text: "El número de tarjeta debe tener 16 dígitos sin espacios.",
+        icon: "warning",
+        confirmButtonColor: "#10b981",
+        confirmButtonText: "Entendido",
+      });
+      return;
+    }
 
-      if (result.success) {
-        alert("✅ Perfil actualizado correctamente");
-        // Limpiar password del formulario por seguridad
-        setForm((f) => ({ ...f, password: "", numeroTarjeta: "" }));
+    // Validar formato de fecha de vencimiento si se proporciona
+    if (form.fechaVencimiento && !/^\d{2}-\d{2}$/.test(form.fechaVencimiento)) {
+      await Swal.fire({
+        title: "Fecha inválida",
+        text: "La fecha de vencimiento debe tener el formato MM-YY (ej: 12-25).",
+        icon: "warning",
+        confirmButtonColor: "#10b981",
+        confirmButtonText: "Entendido",
+      });
+      return;
+    }
+
+    // Mostrar confirmación con resumen
+    const result = await Swal.fire({
+      title: "¿Actualizar perfil?",
+      html: `
+        <div class="text-left space-y-2">
+          <div class="grid grid-cols-2 gap-2">
+            <div class="font-semibold">Nombre:</div>
+            <div>${form.nombre} ${form.apellidoPaterno} ${
+        form.apellidoMaterno || ""
+      }</div>
+            
+            <div class="font-semibold">Correo:</div>
+            <div>${form.email}</div>
+            
+            <div class="font-semibold">Teléfono:</div>
+            <div>${form.telefono || "No especificado"}</div>
+            
+            <div class="font-semibold">Dirección:</div>
+            <div>${form.calle || "No especificada"} ${
+        form.numeroCasa || ""
+      }</div>
+            
+            <div class="font-semibold">Tarjeta:</div>
+            <div>${
+              form.numeroTarjeta
+                ? "****" + form.numeroTarjeta.slice(-4)
+                : "No se modificará"
+            }</div>
+            
+            <div class="font-semibold">Contraseña:</div>
+            <div>${form.password ? "Se cambiará" : "No se modificará"}</div>
+          </div>
+        </div>
+      `,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#10b981",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Sí, actualizar",
+      cancelButtonText: "Cancelar",
+      showLoaderOnConfirm: true,
+      preConfirm: async () => {
+        try {
+          // Preparar datos para enviar
+          const dataToSend = {
+            usuarioID: form.usuarioID,
+            numeroCasa: form.numeroCasa || "",
+            calle: form.calle || "",
+            nombre: form.nombre,
+            apellidoPaterno: form.apellidoPaterno,
+            apellidoMaterno: form.apellidoMaterno || "",
+            telefono: form.telefono || "",
+            fechaNacimiento: form.fechaNacimiento || "2000-01-01",
+            email: form.email,
+            password: form.password || "",
+            numeroTarjeta: form.numeroTarjeta || "",
+            fechaVencimiento: form.fechaVencimiento || "",
+          };
+
+          return await actualizarPerfil(dataToSend);
+        } catch (err) {
+          Swal.showValidationMessage(
+            `Error: ${
+              err?.response?.data?.message ||
+              err.message ||
+              "No se pudo actualizar el perfil"
+            }`
+          );
+        }
+      },
+      allowOutsideClick: () => !Swal.isLoading(),
+    });
+
+    if (result.isConfirmed) {
+      if (result.value?.success) {
+        await Swal.fire({
+          title: "¡Perfil actualizado!",
+          text: "Tu información personal se ha guardado exitosamente.",
+          icon: "success",
+          confirmButtonColor: "#10b981",
+        });
+
+        // Limpiar campos sensibles
+        setForm((f) => ({
+          ...f,
+          password: "",
+          numeroTarjeta: "",
+          fechaVencimiento: f.fechaVencimiento || "",
+        }));
+
+        // Recargar datos actualizados
+        obtenerPerfil(form.usuarioID);
       }
-    } catch (err) {
-      console.error("Error al guardar el perfil:", err);
+    }
+  };
+
+  const handleCancel = async () => {
+    // Verificar si hay cambios sin guardar
+    const hasChanges =
+      form.nombre !== perfil?.nombre ||
+      form.apellidoPaterno !== perfil?.apellidoPaterno ||
+      form.apellidoMaterno !== perfil?.apellidoMaterno ||
+      form.telefono !== perfil?.telefono ||
+      form.email !== perfil?.email ||
+      form.calle !== perfil?.calle ||
+      form.numeroCasa !== perfil?.numeroCasa ||
+      form.fechaNacimiento !==
+        (perfil?.fechaNacimiento?.substring(0, 10) || "") ||
+      form.fechaVencimiento !== perfil?.fechaVencimiento ||
+      form.password ||
+      form.numeroTarjeta;
+
+    if (hasChanges) {
+      const result = await Swal.fire({
+        title: "¿Descartar cambios?",
+        text: "Tienes cambios sin guardar. ¿Seguro que quieres salir?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#ef4444",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Sí, descartar",
+        cancelButtonText: "Cancelar",
+        reverseButtons: true,
+      });
+
+      if (result.isConfirmed) {
+        navigate(-1);
+      }
+    } else {
+      navigate(-1);
     }
   };
 
@@ -148,22 +321,6 @@ export default function MiPerfil() {
         <p className="text-gray-600 mt-1">Administra tu información personal</p>
       </div>
 
-      {/* Error Alert */}
-      {error && (
-        <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-rose-800 flex items-start justify-between">
-          <div className="flex items-start gap-2">
-            <span className="text-rose-500 font-bold">⚠️</span>
-            <span className="text-sm">{error}</span>
-          </div>
-          <button
-            onClick={clearError}
-            className="text-rose-400 hover:text-rose-600 transition"
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
       {/* Formulario */}
       <form
         onSubmit={handleSubmit}
@@ -185,7 +342,8 @@ export default function MiPerfil() {
                 value={form.nombre}
                 onChange={handleChange}
                 required
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition"
+                disabled={saving}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition disabled:opacity-60"
               />
             </div>
 
@@ -198,7 +356,8 @@ export default function MiPerfil() {
                 value={form.apellidoPaterno}
                 onChange={handleChange}
                 required
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition"
+                disabled={saving}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition disabled:opacity-60"
               />
             </div>
 
@@ -210,7 +369,8 @@ export default function MiPerfil() {
                 name="apellidoMaterno"
                 value={form.apellidoMaterno}
                 onChange={handleChange}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition"
+                disabled={saving}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition disabled:opacity-60"
               />
             </div>
           </div>
@@ -234,7 +394,8 @@ export default function MiPerfil() {
                 value={form.email}
                 onChange={handleChange}
                 required
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition"
+                disabled={saving}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition disabled:opacity-60"
               />
             </div>
 
@@ -249,7 +410,8 @@ export default function MiPerfil() {
                 value={form.telefono}
                 onChange={handleChange}
                 placeholder="Ej: 4771234567"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition"
+                disabled={saving}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition disabled:opacity-60"
               />
             </div>
           </div>
@@ -271,7 +433,8 @@ export default function MiPerfil() {
                 value={form.calle}
                 onChange={handleChange}
                 placeholder="Ej: Av. Principal"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition"
+                disabled={saving}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition disabled:opacity-60"
               />
             </div>
 
@@ -285,7 +448,8 @@ export default function MiPerfil() {
                 value={form.numeroCasa}
                 onChange={handleChange}
                 placeholder="Ej: 123"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition"
+                disabled={saving}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition disabled:opacity-60"
               />
             </div>
 
@@ -299,7 +463,8 @@ export default function MiPerfil() {
                 name="fechaNacimiento"
                 value={form.fechaNacimiento}
                 onChange={handleChange}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition"
+                disabled={saving}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition disabled:opacity-60"
               />
             </div>
           </div>
@@ -322,7 +487,8 @@ export default function MiPerfil() {
                 onChange={handleChange}
                 placeholder="Dejar vacío para mantener actual"
                 maxLength={16}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition"
+                disabled={saving}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition disabled:opacity-60"
               />
               {perfil?.ultimosDigitos && (
                 <p className="text-xs text-gray-500 mt-1">
@@ -344,7 +510,8 @@ export default function MiPerfil() {
                 onChange={handleChange}
                 placeholder="MM-YY (Ej: 12-25)"
                 maxLength={5}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition"
+                disabled={saving}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition disabled:opacity-60"
               />
             </div>
           </div>
@@ -366,7 +533,8 @@ export default function MiPerfil() {
                 value={form.password}
                 onChange={handleChange}
                 placeholder="Dejar en blanco para no cambiar"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition"
+                disabled={saving}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition disabled:opacity-60"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Solo completa este campo si deseas cambiar tu contraseña
@@ -379,7 +547,7 @@ export default function MiPerfil() {
         <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
           <button
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={handleCancel}
             disabled={saving}
             className="px-6 py-2.5 rounded-lg text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition disabled:opacity-50"
           >
@@ -387,9 +555,6 @@ export default function MiPerfil() {
           </button>
           <button
             type="submit"
-            onClick={() => {
-              location.reload();
-            }}
             disabled={saving}
             className="px-6 py-2.5 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 transition disabled:opacity-50 flex items-center gap-2"
           >
