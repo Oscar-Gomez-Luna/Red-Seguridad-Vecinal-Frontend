@@ -13,7 +13,7 @@ Puedes consultar el documento técnico completo aquí:
 ## Stack Tecnológico
 * **Core:** React + Vite
 * **Estilos:** Tailwind CSS
-* **Mapas:** Google Maps API interactivo
+* **Mapas:** Maps API interactivo
 
 ## Módulos Principales
 * **Dashboard:** Métricas de incidentes y finanzas en tiempo real.
